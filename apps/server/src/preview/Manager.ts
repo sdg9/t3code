@@ -47,7 +47,11 @@ export class PreviewManager extends Context.Service<
       input: PreviewCloseInput & { readonly tabId: string },
     ) => Effect.Effect<void, PreviewError>;
     readonly requestReveal: (
-      input: PreviewCloseInput & { readonly tabId: string; readonly force: boolean },
+      input: PreviewCloseInput & {
+        readonly tabId: string;
+        readonly force: boolean;
+        readonly sideBySide?: boolean;
+      },
     ) => Effect.Effect<void, PreviewError>;
     readonly resize: (
       input: PreviewResizeInput,
@@ -429,6 +433,7 @@ export const make = Effect.gen(function* PreviewManagerMake() {
           revealRequest: {
             id: yield* random.uuidV4(),
             force: input.force,
+            ...(input.sideBySide ? { sideBySide: true } : {}),
           },
           updatedAt: yield* currentIsoTimestamp,
         };

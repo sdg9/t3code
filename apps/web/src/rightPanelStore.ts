@@ -131,6 +131,8 @@ interface RightPanelStoreState {
   openDevice: (ref: ScopedThreadRef, target: DeviceTabTarget, automatic?: boolean) => void;
   renameDevice: (ref: ScopedThreadRef, surfaceId: string, title: string) => void;
   setTiled: (ref: ScopedThreadRef, tiled: boolean) => void;
+  /** Shows a tab as the next side-by-side tile: last in tab order, selected, tiling on. */
+  showSideBySide: (ref: ScopedThreadRef, surface: TileSurface) => void;
   openBrowser: (ref: ScopedThreadRef, tabId: string | null) => void;
   openFile: (ref: ScopedThreadRef, relativePath: string, line?: number) => void;
   /** Moves in place; "" opens the root explorer. folderTrail keeps the return path; keepSource opens beside the source. */
@@ -224,6 +226,13 @@ const singletonSurface = (
       return { id: "device", kind };
   }
 };
+
+export const deviceSurface = (target: DeviceTabTarget) =>
+  ({
+    id: `device:${encodeURIComponent(target.hostId)}:${encodeURIComponent(target.deviceId)}`,
+    kind: "device",
+    target,
+  }) satisfies TileSurface;
 
 const browserSurface = (tabId: string | null): RightPanelSurface =>
   tabId
@@ -704,10 +713,9 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
       openDevice: (ref, target, automatic = false) =>
         set((state) =>
           (automatic ? automaticUpdate : userAction)(state, scopedThreadKey(ref), (current) => {
-            const id =
-              `device:${encodeURIComponent(target.hostId)}:${encodeURIComponent(target.deviceId)}` as const;
+            const surface = deviceSurface(target);
+            const id = surface.id;
             if (automatic && current.dismissedDeviceSurfaceIds?.includes(id)) return current;
-            const surface: RightPanelSurface = { id, kind: "device", target };
             const existing = current.surfaces.find((entry) => entry.id === id);
             const surfaces = existing
               ? current.surfaces.filter((entry) => entry.id !== "device")
@@ -740,6 +748,25 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
                 : surface,
             ),
           })),
+        ),
+      showSideBySide: (ref, surface) =>
+        set((state) =>
+          automaticUpdate(state, scopedThreadKey(ref), (current) => {
+            const existing = current.surfaces.find((entry) => entry.id === surface.id);
+            const others = current.surfaces.filter(
+              (entry) =>
+                entry.id !== surface.id && (surface.kind !== "device" || entry.id !== "device"),
+            );
+            const dismissed = current.dismissedDeviceSurfaceIds?.filter((id) => id !== surface.id);
+            return {
+              ...current,
+              isOpen: true,
+              tiled: true,
+              surfaces: [...others, existing ?? surface],
+              activeSurfaceId: surface.id,
+              ...(dismissed ? { dismissedDeviceSurfaceIds: dismissed } : {}),
+            };
+          }),
         ),
       setTiled: (ref, tiled) =>
         set((state) =>

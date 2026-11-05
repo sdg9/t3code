@@ -54,7 +54,7 @@ const session = {
 
 const deviceState = (input: {
   readonly sessions?: ReadonlyArray<
-    Omit<typeof session, "openedAt"> & { readonly openedAt: string }
+    Omit<typeof session, "openedAt"> & { readonly openedAt: string; readonly sideBySide?: true }
   >;
   readonly devices?: ReadonlyArray<typeof device>;
 }) =>
@@ -238,6 +238,33 @@ describe("revealServerTabs", () => {
     expect(floatingTabId()).toBeNull();
     // A user action moves keyboard focus into the panel; an agent reveal must not.
     expect(useRightPanelStore.getState().getUserActionRevision(ref)).toBe(userActionRevision);
+  });
+
+  it("tiles side-by-side opens in call order, moving a reopened tab last, in any layout", () => {
+    setup();
+    const sideBySide = (tabId: string): PreviewSessionSnapshot => ({
+      ...tab(tabId),
+      revealRequest: { id: tabId, force: false, sideBySide: true },
+    });
+    const surfaceIds = () =>
+      useRightPanelStore.getState().byThreadKey[threadKey]?.surfaces.map((surface) => surface.id);
+    useRightPanelStore.getState().openBrowser(ref, "tab_b1");
+    revealServerTabs(ref, [sideBySide("tab_a1")], floating);
+    revealServerTabs(ref, [sideBySide("tab_b1")], floating);
+    const sheet = { ...floating, sheetLayout: true };
+    applyDeviceSnapshot(ref.environmentId, deviceState({}), sheet);
+    applyDeviceSnapshot(
+      ref.environmentId,
+      deviceState({ sessions: [{ ...session, sideBySide: true }] }),
+      sheet,
+    );
+    expect(surfaceIds()).toEqual(["browser:tab_a1", "browser:tab_b1", "device:local:pixel"]);
+    expect(useRightPanelStore.getState().byThreadKey[threadKey]).toMatchObject({
+      tiled: true,
+      activeSurfaceId: "device:local:pixel",
+    });
+    expect(floatingTabId()).toBeNull();
+    expect(miniPlayerSource()).toBeUndefined();
   });
 });
 

@@ -242,6 +242,25 @@ it("passes a good run and names every rule a bad run breaks", () => {
   ]);
 });
 
+it("grades a sequence by order and by step, so parallel calls fail it", () => {
+  const expect = {
+    sequence: [
+      { tool: "device_open", args: { deviceId: "a" } },
+      { tool: "device_open", args: { deviceId: "b" } },
+    ],
+  };
+  const run = (...calls: Array<[step: number, deviceId: string]>): SampleRun => ({
+    calls: calls.map(([step, deviceId]) => ({ step, tool: "device_open", input: { deviceId } })),
+    text: "",
+    stopReason: "end_turn",
+  });
+  const label = 'sequence device_open {"deviceId":"a"} > device_open {"deviceId":"b"}';
+  assert.deepEqual(failed(expect, run([0, "a"], [1, "b"])), []);
+  assert.deepEqual(failed(expect, run([0, "b"], [1, "a"], [2, "b"])), []);
+  assert.deepEqual(failed(expect, run([0, "b"], [1, "a"])), [label]);
+  assert.deepEqual(failed(expect, run([0, "a"], [0, "b"])), [label]);
+});
+
 it("bounds numbers and reads target.options in either schema form", () => {
   const expect = {
     calls: [

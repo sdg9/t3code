@@ -23,7 +23,7 @@ import {
   previewThreadRefsAtom,
   type ThreadPreviewState,
 } from "../../previewStateStore";
-import { useRightPanelStore } from "../../rightPanelStore";
+import { deviceSurface, useRightPanelStore } from "../../rightPanelStore";
 import { RIGHT_PANEL_INLINE_LAYOUT_MEDIA_QUERY } from "../../rightPanelLayout";
 import { appAtomRegistry } from "../../rpc/atomRegistry";
 import { deviceEnvironment } from "../../state/device";
@@ -32,7 +32,8 @@ import { environmentSummaries } from "../../state/presentation";
 
 /**
  * Shows browsers an agent or another client revealed for a thread: floating
- * over chat, or focusing an existing panel tab when the reveal is forced.
+ * over chat, focusing an existing panel tab when the reveal is forced, or as
+ * the next side-by-side tile when asked.
  */
 export function revealServerTabs(
   threadRef: ScopedThreadRef,
@@ -41,6 +42,14 @@ export function revealServerTabs(
 ): void {
   if (!readEnvironmentSupportsServerBrowser(threadRef.environmentId)) return;
   for (const session of sessions) {
+    if (session.revealRequest?.sideBySide === true) {
+      useRightPanelStore.getState().showSideBySide(threadRef, {
+        id: `browser:${session.tabId}`,
+        kind: "preview",
+        resourceId: session.tabId,
+      });
+      continue;
+    }
     const force = session.revealRequest?.force === true;
     if (!options.autoShowFloatingPreview && !force) continue;
     const surface = useRightPanelStore
@@ -144,10 +153,9 @@ function hasLiveSession(
 }
 
 /**
- * A device the agent opens floats over its thread's chat, or becomes a panel tab
- * when floating previews are off; sheet layouts get neither. A session without a
- * device summary yet stays out of the baseline so a later snapshot opens it.
- * Floating devices whose session ended close here.
+ * A device the agent opens floats, or becomes a panel tab when floating previews are off;
+ * sheet layouts get neither unless it asked for side by side. A session without a device
+ * summary stays out of the baseline so a later snapshot opens it. Ended floats close here.
  */
 export function applyDeviceSnapshot(
   environmentId: EnvironmentId,
@@ -170,9 +178,10 @@ export function applyDeviceSnapshot(
     environmentId,
     new Set(state.sessions.filter((session) => deviceFor(session) !== undefined).map(sessionKey)),
   );
-  if (!previous || options.sheetLayout) return;
+  if (!previous) return;
   for (const session of state.sessions) {
     if (previous.has(sessionKey(session))) continue;
+    if (options.sheetLayout && session.sideBySide !== true) continue;
     const device = deviceFor(session);
     if (!device) continue;
     const threadRef = scopeThreadRef(environmentId, session.threadId);
@@ -182,6 +191,10 @@ export function applyDeviceSnapshot(
       platform: device.platform,
       name: device.name,
     };
+    if (session.sideBySide === true) {
+      useRightPanelStore.getState().showSideBySide(threadRef, deviceSurface(target));
+      continue;
+    }
     if (options.autoShowFloatingPreview) {
       usePreviewMiniPlayerStore.getState().open(threadRef, { kind: "device", ...target });
       continue;

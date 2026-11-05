@@ -814,6 +814,7 @@ export const makeWithHosts = Effect.fn("DeviceService.makeWithHosts")(function* 
         deviceId: device.id,
         platform: device.platform,
         openedAt,
+        ...(input.sideBySide ? { sideBySide: true } : {}),
       };
       yield* lifecycleLock.withPermit(
         Effect.gen(function* () {

@@ -503,9 +503,14 @@ describe("device setup consent", () => {
         deviceId: "physical-android",
         platform: "android",
       });
-      const ios = yield* service.open({ threadId, deviceId: "ios-simulator", platform: "ios" });
-      expect(physical.deviceId).toBe("physical-android");
-      expect(ios.deviceId).toBe("ios-simulator");
+      const ios = yield* service.open({
+        threadId,
+        deviceId: "ios-simulator",
+        platform: "ios",
+        sideBySide: true,
+      });
+      expect(physical).not.toHaveProperty("sideBySide");
+      expect(ios).toMatchObject({ deviceId: "ios-simulator", sideBySide: true });
 
       const openEmulator = service.open({
         threadId,

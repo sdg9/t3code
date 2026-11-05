@@ -186,6 +186,8 @@ const McpToolUseExpect = Schema.Struct({
   notCalls: Schema.optional(Schema.Array(Schema.String)),
   /** First calls of these tools happen in this order. */
   order: Schema.optional(Schema.Array(Schema.String)),
+  /** Calls matching these entries happen in this order, each in a later step than the last. */
+  sequence: Schema.optional(Schema.Array(McpToolUseCall)),
   minCalls: Schema.optional(Schema.Record(Schema.String, Schema.Number)),
   maxCalls: Schema.optional(Schema.Record(Schema.String, Schema.Number)),
   /**
@@ -1707,6 +1709,21 @@ export const gradeSample = (expect: McpToolUseCase["expect"], run: SampleRun, pa
     const firsts = expect.order.map((tool) => calls.findIndex((call) => call.tool === tool));
     const inOrder = firsts.every((at, i) => at > (firsts[i - 1] ?? -1));
     add(`order ${expect.order.join(" > ")}`, inOrder);
+  }
+  if (expect.sequence !== undefined) {
+    let at = -1;
+    const inSequence = expect.sequence.every(({ tool, args = {} }) => {
+      const after = calls[at]?.step ?? -1;
+      at = calls.findIndex(
+        (call, i) =>
+          i > at &&
+          call.step > after &&
+          tool.split("|").includes(call.tool) &&
+          matches(args, call.input),
+      );
+      return at >= 0;
+    });
+    add(`sequence ${expect.sequence.map(label).join(" > ")}`, inSequence);
   }
   for (const [t, n] of Object.entries(expect.minCalls ?? {}))
     add(`minCalls ${t} >= ${n}`, count(t) >= n);

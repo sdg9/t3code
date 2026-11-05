@@ -164,7 +164,13 @@ export const PreviewSessionSnapshot = Schema.Struct({
   headless: Schema.optional(Schema.Boolean),
   automationOwner: Schema.optional(Schema.String),
   reveal: Schema.optional(Schema.Boolean),
-  revealRequest: Schema.optional(Schema.Struct({ id: Schema.String, force: Schema.Boolean })),
+  revealRequest: Schema.optional(
+    Schema.Struct({
+      id: Schema.String,
+      force: Schema.Boolean,
+      sideBySide: Schema.optional(Schema.Boolean),
+    }),
+  ),
   updatedAt: Schema.String,
 });
 export type PreviewSessionSnapshot = typeof PreviewSessionSnapshot.Type;

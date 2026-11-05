@@ -85,10 +85,15 @@ it.layer(layer)("PreviewManager", (it) => {
       const manager = yield* PreviewManager.PreviewManager;
       const collector = yield* collectEvents;
       const opened = yield* manager.open({ threadId, runtime: "server", reveal: false });
-      yield* manager.requestReveal({ threadId, tabId: opened.tabId, force: true });
+      yield* manager.requestReveal({
+        threadId,
+        tabId: opened.tabId,
+        force: true,
+        sideBySide: true,
+      });
       const first = (yield* manager.list({ threadId })).sessions[0];
       expect(first?.reveal).toBe(true);
-      expect(first?.revealRequest?.force).toBe(true);
+      expect(first?.revealRequest).toMatchObject({ force: true, sideBySide: true });
       yield* manager.reportStatus({
         threadId,
         tabId: opened.tabId,
@@ -104,6 +109,7 @@ it.layer(layer)("PreviewManager", (it) => {
       const second = (yield* manager.list({ threadId })).sessions[0];
       expect(second?.revealRequest?.id).not.toBe(first?.revealRequest?.id);
       expect(second?.revealRequest?.force).toBe(false);
+      expect(second?.revealRequest?.sideBySide).toBeUndefined();
       const events = yield* collector.drain;
       const last = events.at(-1);
       expect(last?.type).toBe("navigated");

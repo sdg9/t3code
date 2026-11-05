@@ -24,7 +24,9 @@ row. Tiles follow tab order, so to compare two builds, drag tabs into pairs:
 tabs 1, 3 and 5 fill the left column and 2, 4 and 6 the right. Every tiled
 device and page stays live. Preview shortcuts such as reload act on the
 selected tab; click a tile's toolbar to select it. Turn **Side by side** off to
-go back to one at a time.
+go back to one at a time. You can also ask the agent to set up a comparison, for
+example "original on the left, new on the right, one row each for iOS, Android
+and web".
 Choose **Float device over chat** in the toolbar to keep watching and tapping the
 device in a small window while the right panel shows something else; drag the
 window by its handle, resize it from any edge, and use **Open in right panel**
