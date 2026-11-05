@@ -21,6 +21,7 @@ import {
 import {
   previewStateAtom,
   previewThreadRefsAtom,
+  setActivePreviewTab,
   type ThreadPreviewState,
 } from "../../previewStateStore";
 import { deviceSurface, useRightPanelStore } from "../../rightPanelStore";
@@ -48,6 +49,7 @@ export function revealServerTabs(
         kind: "preview",
         resourceId: session.tabId,
       });
+      setActivePreviewTab(threadRef, session.tabId);
       continue;
     }
     const force = session.revealRequest?.force === true;

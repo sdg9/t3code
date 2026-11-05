@@ -269,6 +269,21 @@ describe("revealServerTabs", () => {
       tiled: true,
       activeSurfaceId: "device:local:pixel",
     });
+
+    // Later tiles follow the agent's rightmost tile, wherever the user dragged it; a tab
+    // the user closed stops anchoring them even once reopened.
+    const store = useRightPanelStore.getState();
+    store.moveSurface(ref, "browser:tab_a1", 2);
+    store.closeSurface(ref, "device:local:pixel");
+    store.openDevice(ref, { hostId: "local", deviceId: "pixel", platform: "android", name: "P" });
+    revealServerTabs(ref, [sideBySide("tab_c")], floating);
+    expect(surfaceIds()).toEqual([
+      "browser:tab_b1",
+      "browser:tab_a1",
+      "browser:tab_c",
+      "browser:tab_old",
+      "device:local:pixel",
+    ]);
     expect(floatingTabId()).toBeNull();
     expect(miniPlayerSource()).toBeUndefined();
   });

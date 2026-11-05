@@ -436,8 +436,16 @@ const userActionOnThread = (
   closesView: boolean,
 ): Partial<RightPanelStoreState> => ({
   ...updateThread(state, threadKey, (current) => {
-    const next = updater(current);
-    if (next === current) return current;
+    const updated = updater(current);
+    if (updated === current) return current;
+    // A closed tab stops anchoring agent tiles, even if the user reopens it later.
+    const sideBySideIds = updated.sideBySideIds?.filter((id) =>
+      updated.surfaces.some((entry) => entry.id === id),
+    );
+    const next =
+      sideBySideIds === undefined || sideBySideIds.length === updated.sideBySideIds?.length
+        ? updated
+        : { ...updated, sideBySideIds };
     const removedDevices = current.surfaces.filter(
       (surface) =>
         surface.kind === "device" && !next.surfaces.some((entry) => entry.id === surface.id),
@@ -769,15 +777,13 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
             const placed = (current.sideBySideIds ?? []).filter(
               (id) => id !== surface.id && others.some((entry) => entry.id === id),
             );
-            // After the agent's earlier tiles, else before the first other tile, so pairs keep columns.
-            const lastPlaced = placed.at(-1);
+            // After the agent's rightmost tile, else before the first other tile, so pairs keep columns.
+            const lastPlaced = Math.max(
+              -1,
+              ...placed.map((id) => others.findIndex((entry) => entry.id === id)),
+            );
             const firstTile = others.findIndex(isTileSurface);
-            const at =
-              lastPlaced !== undefined
-                ? others.findIndex((entry) => entry.id === lastPlaced) + 1
-                : firstTile < 0
-                  ? others.length
-                  : firstTile;
+            const at = lastPlaced >= 0 ? lastPlaced + 1 : firstTile < 0 ? others.length : firstTile;
             const dismissed = current.dismissedDeviceSurfaceIds?.filter((id) => id !== surface.id);
             return {
               ...current,

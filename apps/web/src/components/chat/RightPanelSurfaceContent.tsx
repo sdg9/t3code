@@ -107,9 +107,9 @@ export function RightPanelSurfaceContent(props: {
               key={tile.id}
               className="flex min-h-0 min-w-0"
               onPointerDownCapture={() => {
-                if (tile.id === props.activeSurfaceId) return;
-                useRightPanelStore.getState().activateSurface(threadRef, tile.id);
                 if (tile.kind === "preview") setActivePreviewTab(threadRef, tile.resourceId);
+                if (tile.id !== props.activeSurfaceId)
+                  useRightPanelStore.getState().activateSurface(threadRef, tile.id);
               }}
             >
               {tile.kind === "device" ? (
