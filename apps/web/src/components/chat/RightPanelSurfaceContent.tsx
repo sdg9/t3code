@@ -15,6 +15,7 @@ import { cn } from "../../lib/utils";
 import type { ComposerImageAttachment, DraftId } from "../../composerDraftStore";
 import type { ShortcutMatchContext } from "../../keybindings";
 import type { SideChatParentPanel } from "../../lib/sideChatPane";
+import { setActivePreviewTab } from "../../previewStateStore";
 import {
   isTileSurface,
   type RightPanelSurface,
@@ -106,8 +107,9 @@ export function RightPanelSurfaceContent(props: {
               key={tile.id}
               className="flex min-h-0 min-w-0"
               onPointerDownCapture={() => {
-                if (tile.id !== props.activeSurfaceId)
-                  useRightPanelStore.getState().activateSurface(threadRef, tile.id);
+                if (tile.id === props.activeSurfaceId) return;
+                useRightPanelStore.getState().activateSurface(threadRef, tile.id);
+                if (tile.kind === "preview") setActivePreviewTab(threadRef, tile.resourceId);
               }}
             >
               {tile.kind === "device" ? (

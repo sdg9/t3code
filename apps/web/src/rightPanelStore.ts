@@ -96,6 +96,8 @@ export interface ThreadRightPanelState {
   maximized?: true;
   /** While a device or browser tab is active, all of them tile two per row, in tab order. */
   tiled?: true;
+  /** Tabs an agent placed side by side, in call order. They stay ahead of other tiles. */
+  sideBySideIds?: string[];
   proactiveDiffTurnId?: RunId;
 }
 
@@ -611,6 +613,13 @@ export function migratePersistedRightPanelState(persistedState: unknown): {
                     : {}),
                   ...(validThreadState?.maximized === true ? { maximized: true as const } : {}),
                   ...(validThreadState?.tiled === true ? { tiled: true as const } : {}),
+                  ...(Array.isArray(validThreadState?.sideBySideIds)
+                    ? {
+                        sideBySideIds: validThreadState.sideBySideIds.filter(
+                          (id): id is string => typeof id === "string",
+                        ),
+                      }
+                    : {}),
                 },
               ];
             }),
@@ -757,12 +766,25 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
               (entry) =>
                 entry.id !== surface.id && (surface.kind !== "device" || entry.id !== "device"),
             );
+            const placed = (current.sideBySideIds ?? []).filter(
+              (id) => id !== surface.id && others.some((entry) => entry.id === id),
+            );
+            // After the agent's earlier tiles, else before the first other tile, so pairs keep columns.
+            const lastPlaced = placed.at(-1);
+            const firstTile = others.findIndex(isTileSurface);
+            const at =
+              lastPlaced !== undefined
+                ? others.findIndex((entry) => entry.id === lastPlaced) + 1
+                : firstTile < 0
+                  ? others.length
+                  : firstTile;
             const dismissed = current.dismissedDeviceSurfaceIds?.filter((id) => id !== surface.id);
             return {
               ...current,
               isOpen: true,
               tiled: true,
-              surfaces: [...others, existing ?? surface],
+              sideBySideIds: [...placed, surface.id],
+              surfaces: [...others.slice(0, at), existing ?? surface, ...others.slice(at)],
               activeSurfaceId: surface.id,
               ...(dismissed ? { dismissedDeviceSurfaceIds: dismissed } : {}),
             };
@@ -772,7 +794,7 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
         set((state) =>
           userAction(state, scopedThreadKey(ref), (current) => {
             if ((current.tiled === true) === tiled) return current;
-            const { tiled: _tiled, ...rest } = current;
+            const { tiled: _tiled, sideBySideIds: _sideBySideIds, ...rest } = current;
             return tiled ? { ...rest, tiled: true } : rest;
           }),
         ),

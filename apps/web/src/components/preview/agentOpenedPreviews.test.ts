@@ -240,7 +240,7 @@ describe("revealServerTabs", () => {
     expect(useRightPanelStore.getState().getUserActionRevision(ref)).toBe(userActionRevision);
   });
 
-  it("tiles side-by-side opens in call order, moving a reopened tab last, in any layout", () => {
+  it("tiles side-by-side opens in call order, ahead of other tabs, in any layout", () => {
     setup();
     const sideBySide = (tabId: string): PreviewSessionSnapshot => ({
       ...tab(tabId),
@@ -248,6 +248,7 @@ describe("revealServerTabs", () => {
     });
     const surfaceIds = () =>
       useRightPanelStore.getState().byThreadKey[threadKey]?.surfaces.map((surface) => surface.id);
+    useRightPanelStore.getState().openBrowser(ref, "tab_old");
     useRightPanelStore.getState().openBrowser(ref, "tab_b1");
     revealServerTabs(ref, [sideBySide("tab_a1")], floating);
     revealServerTabs(ref, [sideBySide("tab_b1")], floating);
@@ -258,7 +259,12 @@ describe("revealServerTabs", () => {
       deviceState({ sessions: [{ ...session, sideBySide: true }] }),
       sheet,
     );
-    expect(surfaceIds()).toEqual(["browser:tab_a1", "browser:tab_b1", "device:local:pixel"]);
+    expect(surfaceIds()).toEqual([
+      "browser:tab_a1",
+      "browser:tab_b1",
+      "device:local:pixel",
+      "browser:tab_old",
+    ]);
     expect(useRightPanelStore.getState().byThreadKey[threadKey]).toMatchObject({
       tiled: true,
       activeSurfaceId: "device:local:pixel",

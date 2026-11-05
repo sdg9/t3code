@@ -638,7 +638,7 @@ export const DeviceToolListResult = Schema.Struct({
 export type DeviceToolListResult = typeof DeviceToolListResult.Type;
 
 export const SIDE_BY_SIDE_GUIDANCE =
-  "Show it in the user's side-by-side grid, two tabs per row across devices and browser tabs. Each call moves this tab last, so make these calls one at a time, in pair order: left 1, right 1, left 2, right 2.";
+  "Show it in the user's side-by-side grid, two tabs per row across devices and browser tabs. Tabs fill in call order, so make these calls one at a time, in pair order: left 1, right 1, left 2, right 2.";
 
 export const DeviceToolOpenInput = Schema.Struct({
   deviceId: Schema.optional(
