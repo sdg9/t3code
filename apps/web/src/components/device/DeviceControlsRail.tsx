@@ -32,7 +32,7 @@ import {
   MenuRadioItemIndicator,
 } from "~/components/ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
-import { type TileLayout, TileLayoutRadioGroup } from "../TileLayoutMenu";
+import type { TileLayout } from "../useTileLayout";
 import type { DeviceStreamHandle, DeviceViewControls } from "./DeviceStreamView";
 import type { DeviceControls } from "./useDeviceControls";
 
@@ -267,23 +267,14 @@ export function DeviceControlsRail(props: {
           </RailButton>
         ) : null}
         {props.tileLayout ? (
-          <Menu>
-            <MenuTrigger
-              render={
-                <Button
-                  size="icon-sm"
-                  variant={props.tileLayout.columns === null ? "ghost" : "secondary"}
-                  aria-label="Side by side"
-                  title="Side by side"
-                />
-              }
-            >
-              <Columns2 />
-            </MenuTrigger>
-            <MenuPopup side={popupSide} className="min-w-52">
-              <TileLayoutRadioGroup layout={props.tileLayout} />
-            </MenuPopup>
-          </Menu>
+          <RailButton
+            tooltipSide={popupSide}
+            label="Side by side"
+            pressed={props.tileLayout.tiled}
+            onClick={props.tileLayout.toggle}
+          >
+            <Columns2 />
+          </RailButton>
         ) : null}
         {view.phone ? (
           <RailButton tooltipSide={popupSide} label="Restore 3D view" onClick={view.resetView}>

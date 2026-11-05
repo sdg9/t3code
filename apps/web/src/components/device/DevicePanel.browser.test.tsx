@@ -96,7 +96,7 @@ vi.mock("~/rightPanelStore", () => ({
   },
   selectThreadRightPanelState: () => ({ isOpen: false, activeSurfaceId: null, surfaces: [] }),
 }));
-vi.mock("~/components/TileLayoutMenu", () => ({ useTileLayout: () => null }));
+vi.mock("~/components/useTileLayout", () => ({ useTileLayout: () => null }));
 vi.mock("~/components/device/DeviceHostUpdates", () => ({ DeviceHostUpdates: () => null }));
 vi.mock("~/components/device/DeviceWorkspace", () => ({
   DeviceWorkspace: ({ onPowerOff }: { onPowerOff: () => void }) => (

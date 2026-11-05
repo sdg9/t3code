@@ -18,7 +18,6 @@ import type { SideChatParentPanel } from "../../lib/sideChatPane";
 import {
   isTileSurface,
   type RightPanelSurface,
-  type TileColumns,
   type TileSurface,
   useRightPanelStore,
 } from "../../rightPanelStore";
@@ -40,8 +39,6 @@ const DevicePanel = lazy(() =>
   import("../device/DevicePanel").then((module) => ({ default: module.DevicePanel })),
 );
 const FilePreviewPanel = lazy(() => import("../files/FilePreviewPanel"));
-
-const TILE_GRID_COLUMNS = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" } as const;
 
 type RightPanelTerminalProps = Omit<
   PersistentThreadTerminalPanelProps,
@@ -71,7 +68,6 @@ export function RightPanelSurfaceContent(props: {
   readonly surface: RightPanelSurface | null;
   /** Device and browser tabs shown together, or null when the active tab shows alone. */
   readonly tiles: ReadonlyArray<TileSurface> | null;
-  readonly tileColumns: TileColumns;
   readonly activeSurfaceId: string | null;
   readonly threadRef: ScopedThreadRef;
   readonly environmentId: EnvironmentId;
@@ -95,14 +91,14 @@ export function RightPanelSurfaceContent(props: {
   if (surface === null) return null;
   if (isTileSurface(surface)) {
     const tiles = props.tiles ?? [surface];
-    const columns = tiles.length > 1 ? props.tileColumns : 1;
     // One grid for one tile or many, so tiling never remounts the active tab's view.
+    // Tabs pair up left and right, one pair per row, for comparing two builds.
     return (
       <Suspense fallback={null}>
         <div
           className={cn(
             "grid size-full min-h-0 auto-rows-[minmax(0,1fr)] gap-px bg-border",
-            TILE_GRID_COLUMNS[columns],
+            tiles.length > 1 ? "grid-cols-2" : "grid-cols-1",
           )}
         >
           {tiles.map((tile, index) => (
@@ -134,7 +130,7 @@ export function RightPanelSurfaceContent(props: {
                   visible={visible}
                   shortcutsEnabled={tile.id === surface.id}
                   // Reordering moves a slot without resizing it; the desktop view must follow.
-                  layoutVersion={`${index}:${columns}`}
+                  layoutVersion={index}
                   onSendAnnotation={props.onSendAnnotation}
                 />
               )}

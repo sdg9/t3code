@@ -1062,7 +1062,7 @@ export default function ChatView(props: ChatViewProps) {
   const rightPanelPresenceValue = {
     activeSurface: activeRightPanelSurface,
     surfaces: rightPanelState.surfaces,
-    tileColumns: rightPanelState.tileColumns,
+    tiled: rightPanelState.tiled === true,
   };
   const rightPanelPresence = usePanelPresence(
     rightPanelOpen && activeThreadRef !== null,
@@ -1077,11 +1077,10 @@ export default function ChatView(props: ChatViewProps) {
   const rightPanelControlsAtRoot = rightPanelPresent && !shouldUsePlanSidebarSheet;
   const renderedRightPanelSurface = rightPanelPresence.value?.activeSurface ?? null;
   const renderedRightPanelSurfaces = rightPanelPresence.value?.surfaces ?? [];
-  const rightPanelTileColumns = rightPanelPresence.value?.tileColumns;
   const rightPanelTiles = selectTiledSurfaces(
     renderedRightPanelSurfaces,
     renderedRightPanelSurface,
-    rightPanelTileColumns,
+    rightPanelPresence.value?.tiled ?? false,
   );
   const previewMiniPlayerVisible = shouldRenderPreviewMiniPlayer(
     activePreviewMiniPlayer?.source ?? null,
@@ -3198,7 +3197,6 @@ export default function ChatView(props: ChatViewProps) {
     <RightPanelSurfaceContent
       surface={renderedRightPanelSurface}
       tiles={rightPanelTiles}
-      tileColumns={rightPanelTileColumns ?? 2}
       activeSurfaceId={activeRightPanelSurface?.id ?? null}
       threadRef={activeThreadRef}
       environmentId={activeThread.environmentId}

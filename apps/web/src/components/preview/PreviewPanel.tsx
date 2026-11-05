@@ -19,7 +19,7 @@ interface Props {
   visible: boolean;
   /** Only one of several visible browser tiles answers preview shortcuts. Defaults to true. */
   shortcutsEnabled?: boolean;
-  layoutVersion?: string;
+  layoutVersion?: number;
   onSendAnnotation?: (
     annotation: PreviewAnnotationPayload,
     image: ComposerImageAttachment | null,

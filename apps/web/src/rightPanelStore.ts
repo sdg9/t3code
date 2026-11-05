@@ -94,8 +94,8 @@ export interface ThreadRightPanelState {
   surfaces: RightPanelSurface[];
   dismissedDeviceSurfaceIds?: string[];
   maximized?: true;
-  /** While a device or browser tab is active, all of them tile in this many columns. */
-  tileColumns?: TileColumns;
+  /** While a device or browser tab is active, all of them tile two per row, in tab order. */
+  tiled?: true;
   proactiveDiffTurnId?: RunId;
 }
 
@@ -130,7 +130,7 @@ interface RightPanelStoreState {
   openSideChat: (ref: ScopedThreadRef, threadId: ThreadId) => void;
   openDevice: (ref: ScopedThreadRef, target: DeviceTabTarget, automatic?: boolean) => void;
   renameDevice: (ref: ScopedThreadRef, surfaceId: string, title: string) => void;
-  setTileColumns: (ref: ScopedThreadRef, columns: TileColumns | null) => void;
+  setTiled: (ref: ScopedThreadRef, tiled: boolean) => void;
   openBrowser: (ref: ScopedThreadRef, tabId: string | null) => void;
   openFile: (ref: ScopedThreadRef, relativePath: string, line?: number) => void;
   /** Moves in place; "" opens the root explorer. folderTrail keeps the return path; keepSource opens beside the source. */
@@ -601,9 +601,7 @@ export function migratePersistedRightPanelState(persistedState: unknown): {
                       }
                     : {}),
                   ...(validThreadState?.maximized === true ? { maximized: true as const } : {}),
-                  ...(isTileColumns(validThreadState?.tileColumns)
-                    ? { tileColumns: validThreadState.tileColumns }
-                    : {}),
+                  ...(validThreadState?.tiled === true ? { tiled: true as const } : {}),
                 },
               ];
             }),
@@ -743,12 +741,12 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
             ),
           })),
         ),
-      setTileColumns: (ref, columns) =>
+      setTiled: (ref, tiled) =>
         set((state) =>
           userAction(state, scopedThreadKey(ref), (current) => {
-            if ((current.tileColumns ?? null) === columns) return current;
-            const { tileColumns: _tileColumns, ...rest } = current;
-            return columns === null ? rest : { ...rest, tileColumns: columns };
+            if ((current.tiled === true) === tiled) return current;
+            const { tiled: _tiled, ...rest } = current;
+            return tiled ? { ...rest, tiled: true } : rest;
           }),
         ),
       openBrowser: (ref, tabId) =>
@@ -1271,11 +1269,6 @@ export function selectSelectedRightPanelSurface(
   return state.surfaces.find((surface) => surface.id === state.activeSurfaceId) ?? null;
 }
 
-export const TILE_COLUMN_OPTIONS = [2, 3] as const;
-export type TileColumns = (typeof TILE_COLUMN_OPTIONS)[number];
-const isTileColumns = (value: unknown): value is TileColumns =>
-  TILE_COLUMN_OPTIONS.some((option) => option === value);
-
 export type TileSurface =
   | Extract<RightPanelSurface, { kind: "device" }>
   | Extract<RightPanelSurface, { kind: "preview"; resourceId: string }>;
@@ -1288,9 +1281,9 @@ export const isTileSurface = (surface: RightPanelSurface | null): surface is Til
 export function selectTiledSurfaces(
   surfaces: ReadonlyArray<RightPanelSurface>,
   activeSurface: RightPanelSurface | null,
-  tileColumns: TileColumns | undefined,
+  tiled: boolean,
 ): TileSurface[] | null {
-  if (tileColumns === undefined || !isTileSurface(activeSurface)) return null;
+  if (!tiled || !isTileSurface(activeSurface)) return null;
   const tiles = surfaces.filter(isTileSurface);
   return tiles.length > 1 ? tiles : null;
 }

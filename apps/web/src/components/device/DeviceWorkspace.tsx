@@ -7,7 +7,7 @@ import {
 } from "@t3tools/client-runtime/device/screenshot";
 import { refreshDeviceHubAccess, useDeviceHubAccess } from "~/state/device";
 import { DeviceControlsRail } from "./DeviceControlsRail";
-import type { TileLayout } from "../TileLayoutMenu";
+import type { TileLayout } from "../useTileLayout";
 import { DeviceStreamView } from "./DeviceStreamView";
 import { DeviceToolsPanel } from "./DeviceToolsPanel";
 import { useDeviceControls } from "./useDeviceControls";

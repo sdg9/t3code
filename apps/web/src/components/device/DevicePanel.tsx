@@ -33,7 +33,7 @@ import { useAtomCommand } from "~/state/use-atom-command";
 import { DeviceLoadingView } from "./DeviceLoadingView";
 import { DeviceSetup, deviceHubReadiness, isAndroidDiscoveryUncertain } from "./DeviceSetup";
 import { DeviceWorkspace } from "./DeviceWorkspace";
-import { useTileLayout } from "../TileLayoutMenu";
+import { useTileLayout } from "../useTileLayout";
 import { PreviewPanelShell, type PreviewPanelMode } from "../preview/PreviewPanelShell";
 
 const platformLabel = (platform: DevicePlatform) =>

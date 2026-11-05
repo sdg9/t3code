@@ -17,7 +17,7 @@ import {
   MenuTrigger,
 } from "~/components/ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
-import { type TileLayout, TileLayoutRadioGroup } from "../TileLayoutMenu";
+import type { TileLayout } from "../useTileLayout";
 
 const COLOR_SCHEME_OPTIONS: ReadonlyArray<{
   value: DesktopPreviewColorScheme;
@@ -103,12 +103,9 @@ export function PreviewMoreMenu({
         ) : null}
         {move ? <MenuItem onClick={move.onMove}>{move.label}</MenuItem> : null}
         {tileLayout ? (
-          <MenuSub>
-            <MenuSubTrigger>Side by side</MenuSubTrigger>
-            <MenuSubPopup>
-              <TileLayoutRadioGroup layout={tileLayout} />
-            </MenuSubPopup>
-          </MenuSub>
+          <MenuItem onClick={tileLayout.toggle}>
+            {tileLayout.tiled ? "Show one at a time" : "Show side by side"}
+          </MenuItem>
         ) : null}
         <MenuItem onClick={onToggleDeviceToolbar} disabled={disabled}>
           {deviceToolbarVisible ? "Hide device toolbar" : "Show device toolbar"}

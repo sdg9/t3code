@@ -195,11 +195,11 @@ describe("rightPanelStore", () => {
       return selectTiledSurfaces(
         state.surfaces,
         state.surfaces.find((surface) => surface.id === state.activeSurfaceId) ?? null,
-        state.tileColumns,
+        state.tiled === true,
       )?.map((surface) => surface.id);
     };
     store.openDevice(refA, { hostId: "local", deviceId: "a", name: "iPhone", platform: "ios" });
-    store.setTileColumns(refA, 2);
+    store.setTiled(refA, true);
     expect(tiled()).toBeUndefined();
     store.openBrowser(refA, null);
     expect(tiled()).toBeUndefined();
@@ -210,10 +210,7 @@ describe("rightPanelStore", () => {
     expect(tiled()).toEqual(["device:local:a", "browser:tab-1"]);
     await reloadRightPanelStore();
     expect(tiled()).toEqual(["device:local:a", "browser:tab-1"]);
-    expect(
-      selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA).tileColumns,
-    ).toBe(2);
-    useRightPanelStore.getState().setTileColumns(refA, null);
+    useRightPanelStore.getState().setTiled(refA, false);
     expect(tiled()).toBeUndefined();
   });
 

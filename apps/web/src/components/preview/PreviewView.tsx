@@ -65,7 +65,7 @@ import { showPreviewPopup } from "./showPreviewPopup";
 import { PreviewChromeRow } from "./PreviewChromeRow";
 import { PreviewEmptyState } from "./PreviewEmptyState";
 import { PreviewMoreMenu, type PreviewMoreMenuActions } from "./PreviewMoreMenu";
-import { useTileLayout } from "../TileLayoutMenu";
+import { useTileLayout } from "../useTileLayout";
 import { commitBrowserViewportChange } from "~/browser/browserViewportActions";
 import { browserResponsiveViewportForToggle, useBrowserDefaults } from "~/browser/browserDefaults";
 import { BrowserDeviceToolbar } from "~/browser/BrowserDeviceToolbar";
@@ -102,7 +102,7 @@ interface Props {
   configuredUrls?: ReadonlyArray<string> | undefined;
   visible: boolean;
   shortcutsEnabled?: boolean;
-  layoutVersion?: string;
+  layoutVersion?: number;
   onSendAnnotation?: (
     annotation: PreviewAnnotationPayload,
     image: ComposerImageAttachment | null,
