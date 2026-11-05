@@ -17,6 +17,9 @@ interface Props {
   tabId?: string | null;
   configuredUrls?: ReadonlyArray<string> | undefined;
   visible: boolean;
+  /** Only one of several visible browser tiles answers preview shortcuts. Defaults to true. */
+  shortcutsEnabled?: boolean;
+  layoutVersion?: string;
   onSendAnnotation?: (
     annotation: PreviewAnnotationPayload,
     image: ComposerImageAttachment | null,
@@ -29,6 +32,8 @@ export function PreviewPanel({
   tabId,
   configuredUrls,
   visible,
+  shortcutsEnabled,
+  layoutVersion,
   onSendAnnotation,
 }: Props) {
   const available = usePreviewAvailable(threadRef.environmentId);
@@ -54,6 +59,8 @@ export function PreviewPanel({
         {...(tabId !== undefined ? { tabId } : {})}
         configuredUrls={configuredUrls}
         visible={visible}
+        {...(shortcutsEnabled !== undefined ? { shortcutsEnabled } : {})}
+        {...(layoutVersion !== undefined ? { layoutVersion } : {})}
         {...(onSendAnnotation ? { onSendAnnotation } : {})}
       />
     </PreviewPanelShell>

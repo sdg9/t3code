@@ -65,6 +65,7 @@ import { showPreviewPopup } from "./showPreviewPopup";
 import { PreviewChromeRow } from "./PreviewChromeRow";
 import { PreviewEmptyState } from "./PreviewEmptyState";
 import { PreviewMoreMenu, type PreviewMoreMenuActions } from "./PreviewMoreMenu";
+import { useTileLayout } from "../TileLayoutMenu";
 import { commitBrowserViewportChange } from "~/browser/browserViewportActions";
 import { browserResponsiveViewportForToggle, useBrowserDefaults } from "~/browser/browserDefaults";
 import { BrowserDeviceToolbar } from "~/browser/BrowserDeviceToolbar";
@@ -100,6 +101,8 @@ interface Props {
   tabId?: string | null;
   configuredUrls?: ReadonlyArray<string> | undefined;
   visible: boolean;
+  shortcutsEnabled?: boolean;
+  layoutVersion?: string;
   onSendAnnotation?: (
     annotation: PreviewAnnotationPayload,
     image: ComposerImageAttachment | null,
@@ -144,8 +147,11 @@ export function PreviewView({
   tabId: requestedTabId,
   configuredUrls,
   visible,
+  shortcutsEnabled = true,
+  layoutVersion,
   onSendAnnotation,
 }: Props) {
+  const tileLayout = useTileLayout(threadRef);
   const urlInputRef = useRef<HTMLInputElement | null>(null);
   const [pickActive, setPickActive] = useState(false);
   const canSendAnnotation =
@@ -857,9 +863,10 @@ export function PreviewView({
       }
     },
   );
+  const answersShortcuts = visible && shortcutsEnabled;
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- subscribes to preview actions while the view is visible
   useEffect(() => {
-    if (!visible) return;
+    if (!answersShortcuts) return;
     const unsubscribeAction = subscribePreviewAction((action) => onPreviewAction(action));
     const unsubscribeMenu = window.desktopBridge?.onMenuAction((action) => {
       if (action === "preview.focusUrl") onPreviewAction("focus-url");
@@ -868,7 +875,7 @@ export function PreviewView({
       unsubscribeAction();
       unsubscribeMenu?.();
     };
-  }, [visible]);
+  }, [answersShortcuts]);
 
   return (
     <div
@@ -937,6 +944,7 @@ export function PreviewView({
               deviceToolbarVisible={viewport._tag !== "fill"}
               onToggleDeviceToolbar={handleToggleDeviceToolbar}
               nativePictureInPicture={desktopOverlay?.pictureInPicture ?? false}
+              tileLayout={tileLayout}
             />
           ) : null
         }
@@ -996,6 +1004,7 @@ export function PreviewView({
               key={runtimeTabId}
               tabId={runtimeTabId}
               visible={visible && !isUnreachable}
+              {...(layoutVersion !== undefined ? { layoutVersion } : {})}
               className="absolute inset-0 h-full w-full"
             />
           ) : (

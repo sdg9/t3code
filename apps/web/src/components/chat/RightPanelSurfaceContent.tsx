@@ -11,12 +11,15 @@ import type {
 import { scopedThreadKey } from "@t3tools/client-runtime/environment";
 import { lazy, Suspense } from "react";
 import SideChatPane from "./SideChatPane";
+import { cn } from "../../lib/utils";
 import type { ComposerImageAttachment, DraftId } from "../../composerDraftStore";
 import type { ShortcutMatchContext } from "../../keybindings";
 import type { SideChatParentPanel } from "../../lib/sideChatPane";
 import {
+  isTileSurface,
   type RightPanelSurface,
-  selectTiledDeviceSurfaces,
+  type TileColumns,
+  type TileSurface,
   useRightPanelStore,
 } from "../../rightPanelStore";
 import {
@@ -37,6 +40,8 @@ const DevicePanel = lazy(() =>
   import("../device/DevicePanel").then((module) => ({ default: module.DevicePanel })),
 );
 const FilePreviewPanel = lazy(() => import("../files/FilePreviewPanel"));
+
+const TILE_GRID_COLUMNS = { 1: "grid-cols-1", 2: "grid-cols-2", 3: "grid-cols-3" } as const;
 
 type RightPanelTerminalProps = Omit<
   PersistentThreadTerminalPanelProps,
@@ -64,8 +69,9 @@ interface RightPanelFileProps {
 
 export function RightPanelSurfaceContent(props: {
   readonly surface: RightPanelSurface | null;
-  readonly surfaces: ReadonlyArray<RightPanelSurface>;
-  readonly devicesTiled: boolean;
+  /** Device and browser tabs shown together, or null when the active tab shows alone. */
+  readonly tiles: ReadonlyArray<TileSurface> | null;
+  readonly tileColumns: TileColumns;
   readonly activeSurfaceId: string | null;
   readonly threadRef: ScopedThreadRef;
   readonly environmentId: EnvironmentId;
@@ -87,6 +93,57 @@ export function RightPanelSurfaceContent(props: {
 }) {
   const { surface, threadRef, visible, onCloseSurface } = props;
   if (surface === null) return null;
+  if (isTileSurface(surface)) {
+    const tiles = props.tiles ?? [surface];
+    const columns = tiles.length > 1 ? props.tileColumns : 1;
+    // One grid for one tile or many, so tiling never remounts the active tab's view.
+    return (
+      <Suspense fallback={null}>
+        <div
+          className={cn(
+            "grid size-full min-h-0 auto-rows-[minmax(0,1fr)] gap-px bg-border",
+            TILE_GRID_COLUMNS[columns],
+          )}
+        >
+          {tiles.map((tile, index) => (
+            <div
+              key={tile.id}
+              className="flex min-h-0 min-w-0"
+              onPointerDownCapture={() => {
+                if (tile.id !== props.activeSurfaceId)
+                  useRightPanelStore.getState().activateSurface(threadRef, tile.id);
+              }}
+            >
+              {tile.kind === "device" ? (
+                <DevicePanel
+                  mode="embedded"
+                  threadRef={threadRef}
+                  surface={tile}
+                  visible={visible}
+                  onDismissSetup={() => {
+                    onCloseSurface(tile);
+                    useRightPanelStore.getState().show(threadRef);
+                  }}
+                />
+              ) : (
+                <PreviewPanel
+                  mode="embedded"
+                  threadRef={threadRef}
+                  tabId={tile.resourceId}
+                  configuredUrls={props.configuredPreviewUrls}
+                  visible={visible}
+                  shortcutsEnabled={tile.id === surface.id}
+                  // Reordering moves a slot without resizing it; the desktop view must follow.
+                  layoutVersion={`${index}:${columns}`}
+                  onSendAnnotation={props.onSendAnnotation}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </Suspense>
+    );
+  }
   switch (surface.kind) {
     case "preview":
       return (
@@ -185,31 +242,6 @@ export function RightPanelSurfaceContent(props: {
           onClose={() => onCloseSurface(surface)}
         />
       );
-    case "device": {
-      const tiles = selectTiledDeviceSurfaces(props.surfaces, surface, props.devicesTiled) ?? [
-        surface,
-      ];
-      // One grid for both layouts, so tiling never remounts the active device's stream.
-      return (
-        <Suspense fallback={null}>
-          <div className="grid size-full min-h-0 grid-flow-col auto-cols-[minmax(0,1fr)] divide-x divide-border">
-            {tiles.map((tile) => (
-              <DevicePanel
-                mode="embedded"
-                threadRef={threadRef}
-                key={tile.id}
-                surface={tile}
-                visible={visible}
-                onDismissSetup={() => {
-                  props.onCloseSurface(tile);
-                  useRightPanelStore.getState().show(threadRef);
-                }}
-              />
-            ))}
-          </div>
-        </Suspense>
-      );
-    }
     case "files":
     case "file": {
       const files = props.files;

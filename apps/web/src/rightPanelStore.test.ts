@@ -13,7 +13,7 @@ import {
   selectActiveRightPanelSurface,
   selectThreadPanelVisibility,
   selectThreadRightPanelState,
-  selectTiledDeviceSurfaces,
+  selectTiledSurfaces,
   useRightPanelStore,
 } from "./rightPanelStore";
 
@@ -188,28 +188,32 @@ describe("rightPanelStore", () => {
     ).toEqual([expect.objectContaining({ target: ios })]);
   });
 
-  it("tiles every device tab while one is active, and remembers the choice across reload", async () => {
+  it("tiles device and opened browser tabs in tab order while one is active, across reload", async () => {
     const store = useRightPanelStore.getState();
     const tiled = () => {
       const state = selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA);
-      return selectTiledDeviceSurfaces(
+      return selectTiledSurfaces(
         state.surfaces,
         state.surfaces.find((surface) => surface.id === state.activeSurfaceId) ?? null,
-        state.devicesTiled === true,
+        state.tileColumns,
       )?.map((surface) => surface.id);
     };
-    const device = { hostId: "local", name: "iPhone", platform: "ios" } as const;
-    store.openDevice(refA, { ...device, deviceId: "a" });
-    store.setDevicesTiled(refA, true);
+    store.openDevice(refA, { hostId: "local", deviceId: "a", name: "iPhone", platform: "ios" });
+    store.setTileColumns(refA, 2);
     expect(tiled()).toBeUndefined();
-    store.openDevice(refA, { ...device, deviceId: "b" });
+    store.openBrowser(refA, null);
+    expect(tiled()).toBeUndefined();
+    store.openBrowser(refA, "tab-1");
     store.open(refA, "files");
     expect(tiled()).toBeUndefined();
-    store.activateSurface(refA, "device:local:a");
-    expect(tiled()).toEqual(["device:local:a", "device:local:b"]);
+    store.activateSurface(refA, "browser:tab-1");
+    expect(tiled()).toEqual(["device:local:a", "browser:tab-1"]);
     await reloadRightPanelStore();
-    expect(tiled()).toEqual(["device:local:a", "device:local:b"]);
-    useRightPanelStore.getState().setDevicesTiled(refA, false);
+    expect(tiled()).toEqual(["device:local:a", "browser:tab-1"]);
+    expect(
+      selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA).tileColumns,
+    ).toBe(2);
+    useRightPanelStore.getState().setTileColumns(refA, null);
     expect(tiled()).toBeUndefined();
   });
 

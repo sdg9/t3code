@@ -18,9 +18,13 @@ device to boot it. The panel shows when you or an agent starts a device.
 Each device opens in its own tab. Use **+ → Device** to open another, and
 double-click a tab name or choose **Rename** from its context menu to rename it.
 Only the visible tab streams video; switching tabs keeps both devices running.
-With two or more device tabs open, choose **Show devices side by side** in the
-device toolbar to watch them all at once; every tiled device streams, and the
-same button switches back to one device at a time.
+With two or more device or browser tabs open, choose **Side by side** in the
+device toolbar or the browser's **More** menu to show them all at once in two
+or three columns. Tiles follow tab order, so drag tabs to arrange them: with
+two columns, tabs 1, 3 and 5 fill the left column and 2, 4 and 6 the right.
+Every tiled device and page stays live. Preview shortcuts such as reload act
+on the selected tab; click a tile's toolbar to select it. Choose
+**One at a time** to go back.
 Choose **Float device over chat** in the toolbar to keep watching and tapping the
 device in a small window while the right panel shows something else; drag the
 window by its handle, resize it from any edge, and use **Open in right panel**

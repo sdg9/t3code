@@ -6,7 +6,8 @@ import {
   DeviceScreenshotError,
 } from "@t3tools/client-runtime/device/screenshot";
 import { refreshDeviceHubAccess, useDeviceHubAccess } from "~/state/device";
-import { DeviceControlsRail, type DeviceTiling } from "./DeviceControlsRail";
+import { DeviceControlsRail } from "./DeviceControlsRail";
+import type { TileLayout } from "../TileLayoutMenu";
 import { DeviceStreamView } from "./DeviceStreamView";
 import { DeviceToolsPanel } from "./DeviceToolsPanel";
 import { useDeviceControls } from "./useDeviceControls";
@@ -22,7 +23,7 @@ export function DeviceWorkspace(props: {
   hostKind: DeviceHostSummary["kind"] | undefined;
   hostDiagnostics: string | undefined;
   visible: boolean;
-  tiling: DeviceTiling | null;
+  tileLayout: TileLayout | null;
   onFloat: () => void;
   onClose: () => void;
   onPowerOff: () => void;
@@ -105,7 +106,7 @@ export function DeviceWorkspace(props: {
                 onScreenshot={() => void saveScreenshot()}
                 toolsOpen={toolsOpen}
                 onTools={() => setToolsOpen(!toolsOpen)}
-                tiling={props.tiling}
+                tileLayout={props.tileLayout}
                 onFloat={props.onFloat}
                 onClose={props.onClose}
                 onPowerOff={props.onPowerOff}

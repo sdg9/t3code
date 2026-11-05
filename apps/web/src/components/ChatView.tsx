@@ -155,6 +155,7 @@ import {
   selectActiveRightPanelSurface,
   selectThreadPanelOpen,
   selectThreadRightPanelState,
+  selectTiledSurfaces,
   useRightPanelStore,
 } from "../rightPanelStore";
 import { isPreviewSupportedInRuntime, useThreadPreviewState } from "../previewStateStore";
@@ -1061,7 +1062,7 @@ export default function ChatView(props: ChatViewProps) {
   const rightPanelPresenceValue = {
     activeSurface: activeRightPanelSurface,
     surfaces: rightPanelState.surfaces,
-    devicesTiled: rightPanelState.devicesTiled === true,
+    tileColumns: rightPanelState.tileColumns,
   };
   const rightPanelPresence = usePanelPresence(
     rightPanelOpen && activeThreadRef !== null,
@@ -1076,9 +1077,15 @@ export default function ChatView(props: ChatViewProps) {
   const rightPanelControlsAtRoot = rightPanelPresent && !shouldUsePlanSidebarSheet;
   const renderedRightPanelSurface = rightPanelPresence.value?.activeSurface ?? null;
   const renderedRightPanelSurfaces = rightPanelPresence.value?.surfaces ?? [];
+  const rightPanelTileColumns = rightPanelPresence.value?.tileColumns;
+  const rightPanelTiles = selectTiledSurfaces(
+    renderedRightPanelSurfaces,
+    renderedRightPanelSurface,
+    rightPanelTileColumns,
+  );
   const previewMiniPlayerVisible = shouldRenderPreviewMiniPlayer(
     activePreviewMiniPlayer?.source ?? null,
-    renderedRightPanelSurface,
+    rightPanelTiles ?? (renderedRightPanelSurface ? [renderedRightPanelSurface] : []),
   );
   const canMaximizeRightPanel = rightPanelOpen;
   // An embedded side chat has no panel; a stale maximized flag would hide its own column.
@@ -3190,8 +3197,8 @@ export default function ChatView(props: ChatViewProps) {
   const rightPanelContent = activeThreadRef ? (
     <RightPanelSurfaceContent
       surface={renderedRightPanelSurface}
-      surfaces={renderedRightPanelSurfaces}
-      devicesTiled={rightPanelPresence.value?.devicesTiled ?? false}
+      tiles={rightPanelTiles}
+      tileColumns={rightPanelTileColumns ?? 2}
       activeSurfaceId={activeRightPanelSurface?.id ?? null}
       threadRef={activeThreadRef}
       environmentId={activeThread.environmentId}

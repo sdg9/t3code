@@ -94,8 +94,8 @@ export interface ThreadRightPanelState {
   surfaces: RightPanelSurface[];
   dismissedDeviceSurfaceIds?: string[];
   maximized?: true;
-  /** While a device tab is active, every device tab shows side by side. */
-  devicesTiled?: true;
+  /** While a device or browser tab is active, all of them tile in this many columns. */
+  tileColumns?: TileColumns;
   proactiveDiffTurnId?: RunId;
 }
 
@@ -130,7 +130,7 @@ interface RightPanelStoreState {
   openSideChat: (ref: ScopedThreadRef, threadId: ThreadId) => void;
   openDevice: (ref: ScopedThreadRef, target: DeviceTabTarget, automatic?: boolean) => void;
   renameDevice: (ref: ScopedThreadRef, surfaceId: string, title: string) => void;
-  setDevicesTiled: (ref: ScopedThreadRef, tiled: boolean) => void;
+  setTileColumns: (ref: ScopedThreadRef, columns: TileColumns | null) => void;
   openBrowser: (ref: ScopedThreadRef, tabId: string | null) => void;
   openFile: (ref: ScopedThreadRef, relativePath: string, line?: number) => void;
   /** Moves in place; "" opens the root explorer. folderTrail keeps the return path; keepSource opens beside the source. */
@@ -601,8 +601,8 @@ export function migratePersistedRightPanelState(persistedState: unknown): {
                       }
                     : {}),
                   ...(validThreadState?.maximized === true ? { maximized: true as const } : {}),
-                  ...(validThreadState?.devicesTiled === true
-                    ? { devicesTiled: true as const }
+                  ...(isTileColumns(validThreadState?.tileColumns)
+                    ? { tileColumns: validThreadState.tileColumns }
                     : {}),
                 },
               ];
@@ -743,12 +743,12 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
             ),
           })),
         ),
-      setDevicesTiled: (ref, tiled) =>
+      setTileColumns: (ref, columns) =>
         set((state) =>
           userAction(state, scopedThreadKey(ref), (current) => {
-            if ((current.devicesTiled ?? false) === tiled) return current;
-            const { devicesTiled: _devicesTiled, ...rest } = current;
-            return tiled ? { ...rest, devicesTiled: true } : rest;
+            if ((current.tileColumns ?? null) === columns) return current;
+            const { tileColumns: _tileColumns, ...rest } = current;
+            return columns === null ? rest : { ...rest, tileColumns: columns };
           }),
         ),
       openBrowser: (ref, tabId) =>
@@ -1271,15 +1271,26 @@ export function selectSelectedRightPanelSurface(
   return state.surfaces.find((surface) => surface.id === state.activeSurfaceId) ?? null;
 }
 
-export type DeviceSurface = Extract<RightPanelSurface, { kind: "device" }>;
+export const TILE_COLUMN_OPTIONS = [2, 3] as const;
+export type TileColumns = (typeof TILE_COLUMN_OPTIONS)[number];
+const isTileColumns = (value: unknown): value is TileColumns =>
+  TILE_COLUMN_OPTIONS.some((option) => option === value);
 
-/** The device tabs to show side by side, or null when the active tab shows alone. */
-export function selectTiledDeviceSurfaces(
+export type TileSurface =
+  | Extract<RightPanelSurface, { kind: "device" }>
+  | Extract<RightPanelSurface, { kind: "preview"; resourceId: string }>;
+
+// An unopened browser tab has no page of its own to show beside the others.
+export const isTileSurface = (surface: RightPanelSurface | null): surface is TileSurface =>
+  surface?.kind === "device" || (surface?.kind === "preview" && surface.resourceId !== null);
+
+/** Device and browser tabs to show together in tab order, or null when the active tab shows alone. */
+export function selectTiledSurfaces(
   surfaces: ReadonlyArray<RightPanelSurface>,
   activeSurface: RightPanelSurface | null,
-  devicesTiled: boolean,
-): DeviceSurface[] | null {
-  if (!devicesTiled || activeSurface?.kind !== "device") return null;
-  const devices = surfaces.filter((surface) => surface.kind === "device");
-  return devices.length > 1 ? devices : null;
+  tileColumns: TileColumns | undefined,
+): TileSurface[] | null {
+  if (tileColumns === undefined || !isTileSurface(activeSurface)) return null;
+  const tiles = surfaces.filter(isTileSurface);
+  return tiles.length > 1 ? tiles : null;
 }

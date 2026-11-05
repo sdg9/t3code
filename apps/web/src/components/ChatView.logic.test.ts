@@ -7,6 +7,7 @@ import {
   snapshotComposerSend,
   withMessageContext,
   deriveAvailableRevertTurnCounts,
+  shouldRenderPreviewMiniPlayer,
 } from "./ChatView.logic";
 import { recallCheckoutIsRepo, rememberCheckoutIsRepo } from "./ChatView.logic";
 import { ProviderDriverKind, type ServerProvider } from "@t3tools/contracts";
@@ -102,6 +103,29 @@ const readySession = {
   lastError: null,
   updatedAt: "2026-03-29T00:00:10.000Z",
 };
+
+describe("shouldRenderPreviewMiniPlayer", () => {
+  it("hides the floating window while any tile already shows its source", () => {
+    const device = {
+      id: "device:local:a",
+      kind: "device",
+      target: { hostId: "local", deviceId: "a", platform: "ios", name: "iPhone" },
+    } as const;
+    const browser = { id: "browser:tab-1", kind: "preview", resourceId: "tab-1" } as const;
+    const floatingDevice = {
+      kind: "device",
+      hostId: "local",
+      deviceId: "a",
+      platform: "ios",
+      name: "iPhone",
+    } as const;
+    expect(shouldRenderPreviewMiniPlayer(floatingDevice, [browser, device])).toBe(false);
+    expect(shouldRenderPreviewMiniPlayer(floatingDevice, [browser])).toBe(true);
+    expect(
+      shouldRenderPreviewMiniPlayer({ kind: "browser", tabId: "tab-1" }, [device, browser]),
+    ).toBe(false);
+  });
+});
 
 describe("deriveComposerSendState", () => {
   it("keeps text sendable while excluding expired terminal pills", () => {
