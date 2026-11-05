@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 import { NonNegativeInt, PositiveInt, ThreadId, TrimmedNonEmptyString } from "./baseSchemas.ts";
 import { BROWSER_PROFILE_MAX_COUNT, BrowserProfile, BrowserProfileId } from "./browserProfile.ts";
+import { SideBySideLayout } from "./device.ts";
 
 export const PREVIEW_URL_MAX_LENGTH = 2_048;
 export const CONFIGURED_LOCAL_SERVER_URLS_MAX_ITEMS = 32;
@@ -169,6 +170,7 @@ export const PreviewSessionSnapshot = Schema.Struct({
       id: Schema.String,
       force: Schema.Boolean,
       sideBySide: Schema.optional(Schema.Boolean),
+      layout: Schema.optional(SideBySideLayout),
     }),
   ),
   updatedAt: Schema.String,

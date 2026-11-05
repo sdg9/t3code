@@ -43,12 +43,15 @@ export function revealServerTabs(
 ): void {
   if (!readEnvironmentSupportsServerBrowser(threadRef.environmentId)) return;
   for (const session of sessions) {
-    if (session.revealRequest?.sideBySide === true) {
-      useRightPanelStore.getState().showSideBySide(threadRef, {
-        id: `browser:${session.tabId}`,
-        kind: "preview",
-        resourceId: session.tabId,
-      });
+    const request = session.revealRequest;
+    if (request?.sideBySide === true) {
+      useRightPanelStore
+        .getState()
+        .showSideBySide(
+          threadRef,
+          { id: `browser:${session.tabId}`, kind: "preview", resourceId: session.tabId },
+          request.layout,
+        );
       setActivePreviewTab(threadRef, session.tabId);
       continue;
     }
@@ -194,7 +197,9 @@ export function applyDeviceSnapshot(
       name: device.name,
     };
     if (session.sideBySide === true) {
-      useRightPanelStore.getState().showSideBySide(threadRef, deviceSurface(target));
+      useRightPanelStore
+        .getState()
+        .showSideBySide(threadRef, deviceSurface(target), session.layout);
       continue;
     }
     if (options.autoShowFloatingPreview) {

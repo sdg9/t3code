@@ -18,15 +18,14 @@ device to boot it. The panel shows when you or an agent starts a device.
 Each device opens in its own tab. Use **+ → Device** to open another, and
 double-click a tab name or choose **Rename** from its context menu to rename it.
 Only the visible tab streams video; switching tabs keeps both devices running.
-With two or more device or browser tabs open, turn on **Side by side** in the
-device toolbar or the browser's **More** menu to show them all at once, two per
-row. Tiles follow tab order, so to compare two builds, drag tabs into pairs:
-tabs 1, 3 and 5 fill the left column and 2, 4 and 6 the right. Every tiled
-device and page stays live. Preview shortcuts such as reload act on the
-selected tab; click a tile's toolbar to select it. Turn **Side by side** off to
-go back to one at a time. You can also ask the agent to set up a comparison, for
-example "original on the left, new on the right, one row each for iOS, Android
-and web".
+To see device and browser tabs at once, click the grid icon at the right of the
+panel's tab row and pick a size, such as 2 wide by 3 down. Tabs fill the grid in
+tab order, left to right; drag a tile by its title bar onto another tile to swap
+them. Tabs that don't fit stay in the tab row. Every tiled device and page stays
+live. Preview shortcuts such as reload act on the selected tile; click a tile to
+select it. Choose **One at a time** to go back. You can also ask the agent to set
+up a comparison, for example "original on the left, new on the right, one row
+each for iOS, Android and web".
 Choose **Float device over chat** in the toolbar to keep watching and tapping the
 device in a small window while the right panel shows something else; drag the
 window by its handle, resize it from any edge, and use **Open in right panel**

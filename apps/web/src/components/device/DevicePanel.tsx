@@ -33,7 +33,6 @@ import { useAtomCommand } from "~/state/use-atom-command";
 import { DeviceLoadingView } from "./DeviceLoadingView";
 import { DeviceSetup, deviceHubReadiness, isAndroidDiscoveryUncertain } from "./DeviceSetup";
 import { DeviceWorkspace } from "./DeviceWorkspace";
-import { useTileLayout } from "../useTileLayout";
 import { PreviewPanelShell, type PreviewPanelMode } from "../preview/PreviewPanelShell";
 
 const platformLabel = (platform: DevicePlatform) =>
@@ -65,7 +64,6 @@ export function DevicePanel(props: {
   const pendingDevice = operation?.scope === scope ? operation.pending : null;
   const operationError = operation?.scope === scope ? operation.error : null;
   const pendingDeviceKey = pendingDevice ? deviceKey(pendingDevice) : null;
-  const tileLayout = useTileLayout(props.threadRef);
 
   const hostDisabled = state.hostStatus === "disabled";
 
@@ -247,7 +245,6 @@ export function DevicePanel(props: {
                 diagnostics.find(({ hostId }) => hostId === activeDevice.hostId)?.detail
               }
               visible={props.visible}
-              tileLayout={tileLayout}
               onFloat={floatActive}
               onClose={() => closeActive(false)}
               onPowerOff={() => closeActive(true)}

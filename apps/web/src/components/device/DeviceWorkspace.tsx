@@ -7,7 +7,6 @@ import {
 } from "@t3tools/client-runtime/device/screenshot";
 import { refreshDeviceHubAccess, useDeviceHubAccess } from "~/state/device";
 import { DeviceControlsRail } from "./DeviceControlsRail";
-import type { TileLayout } from "../useTileLayout";
 import { DeviceStreamView } from "./DeviceStreamView";
 import { DeviceToolsPanel } from "./DeviceToolsPanel";
 import { useDeviceControls } from "./useDeviceControls";
@@ -23,7 +22,6 @@ export function DeviceWorkspace(props: {
   hostKind: DeviceHostSummary["kind"] | undefined;
   hostDiagnostics: string | undefined;
   visible: boolean;
-  tileLayout: TileLayout | null;
   onFloat: () => void;
   onClose: () => void;
   onPowerOff: () => void;
@@ -106,7 +104,6 @@ export function DeviceWorkspace(props: {
                 onScreenshot={() => void saveScreenshot()}
                 toolsOpen={toolsOpen}
                 onTools={() => setToolsOpen(!toolsOpen)}
-                tileLayout={props.tileLayout}
                 onFloat={props.onFloat}
                 onClose={props.onClose}
                 onPowerOff={props.onPowerOff}

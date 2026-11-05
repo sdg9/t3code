@@ -2083,7 +2083,8 @@ const make = Effect.gen(function* () {
                   threadId: tab.threadId,
                   tabId: tab.tabId,
                   force: reveal === true,
-                  ...(open.sideBySide ? { sideBySide: true } : {}),
+                  ...(open.sideBySide || open.layout ? { sideBySide: true } : {}),
+                  ...(open.layout ? { layout: open.layout } : {}),
                 }),
               );
             }

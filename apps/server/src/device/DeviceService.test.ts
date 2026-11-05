@@ -508,9 +508,14 @@ describe("device setup consent", () => {
         deviceId: "ios-simulator",
         platform: "ios",
         sideBySide: true,
+        layout: { columns: 2, rows: 3 },
       });
       expect(physical).not.toHaveProperty("sideBySide");
-      expect(ios).toMatchObject({ deviceId: "ios-simulator", sideBySide: true });
+      expect(ios).toMatchObject({
+        deviceId: "ios-simulator",
+        sideBySide: true,
+        layout: { columns: 2, rows: 3 },
+      });
 
       const openEmulator = service.open({
         threadId,

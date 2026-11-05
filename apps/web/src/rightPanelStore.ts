@@ -3,7 +3,13 @@ import {
   scopedThreadKey,
   scopeThreadRef,
 } from "@t3tools/client-runtime/environment";
-import { EnvironmentId, RunId, ThreadId, type ScopedThreadRef } from "@t3tools/contracts";
+import {
+  EnvironmentId,
+  RunId,
+  ThreadId,
+  type ScopedThreadRef,
+  type SideBySideLayout,
+} from "@t3tools/contracts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -94,8 +100,8 @@ export interface ThreadRightPanelState {
   surfaces: RightPanelSurface[];
   dismissedDeviceSurfaceIds?: string[];
   maximized?: true;
-  /** While a device or browser tab is active, all of them tile two per row, in tab order. */
-  tiled?: true;
+  /** While a device or browser tab is active, tabs fill this grid in tab order. */
+  grid?: SideBySideLayout;
   /** Tabs an agent placed side by side, in call order. They stay ahead of other tiles. */
   sideBySideIds?: string[];
   proactiveDiffTurnId?: RunId;
@@ -132,9 +138,11 @@ interface RightPanelStoreState {
   openSideChat: (ref: ScopedThreadRef, threadId: ThreadId) => void;
   openDevice: (ref: ScopedThreadRef, target: DeviceTabTarget, automatic?: boolean) => void;
   renameDevice: (ref: ScopedThreadRef, surfaceId: string, title: string) => void;
-  setTiled: (ref: ScopedThreadRef, tiled: boolean) => void;
-  /** Shows a tab as the next side-by-side tile: last in tab order, selected, tiling on. */
-  showSideBySide: (ref: ScopedThreadRef, surface: TileSurface) => void;
+  setGrid: (ref: ScopedThreadRef, grid: SideBySideLayout | null) => void;
+  /** Shows a tab as the next side-by-side tile, selected; `layout` also sizes the grid. */
+  showSideBySide: (ref: ScopedThreadRef, surface: TileSurface, layout?: SideBySideLayout) => void;
+  /** Puts a tile in another tile's place, keeping tab order and grid in step. */
+  swapSurfaces: (ref: ScopedThreadRef, surfaceId: string, targetId: string) => void;
   openBrowser: (ref: ScopedThreadRef, tabId: string | null) => void;
   openFile: (ref: ScopedThreadRef, relativePath: string, line?: number) => void;
   /** Moves in place; "" opens the root explorer. folderTrail keeps the return path; keepSource opens beside the source. */
@@ -620,7 +628,9 @@ export function migratePersistedRightPanelState(persistedState: unknown): {
                       }
                     : {}),
                   ...(validThreadState?.maximized === true ? { maximized: true as const } : {}),
-                  ...(validThreadState?.tiled === true ? { tiled: true as const } : {}),
+                  ...(isSideBySideLayout(validThreadState?.grid)
+                    ? { grid: validThreadState.grid }
+                    : {}),
                   ...(Array.isArray(validThreadState?.sideBySideIds)
                     ? {
                         sideBySideIds: validThreadState.sideBySideIds.filter(
@@ -766,7 +776,7 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
             ),
           })),
         ),
-      showSideBySide: (ref, surface) =>
+      showSideBySide: (ref, surface, layout) =>
         set((state) =>
           automaticUpdate(state, scopedThreadKey(ref), (current) => {
             const existing = current.surfaces.find((entry) => entry.id === surface.id);
@@ -785,23 +795,36 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
             const firstTile = others.findIndex(isTileSurface);
             const at = lastPlaced >= 0 ? lastPlaced + 1 : firstTile < 0 ? others.length : firstTile;
             const dismissed = current.dismissedDeviceSurfaceIds?.filter((id) => id !== surface.id);
+            const surfaces = [...others.slice(0, at), existing ?? surface, ...others.slice(at)];
             return {
               ...current,
               isOpen: true,
-              tiled: true,
+              grid: layout ?? gridFitting(current.grid, surfaces.filter(isTileSurface).length),
               sideBySideIds: [...placed, surface.id],
-              surfaces: [...others.slice(0, at), existing ?? surface, ...others.slice(at)],
+              surfaces,
               activeSurfaceId: surface.id,
               ...(dismissed ? { dismissedDeviceSurfaceIds: dismissed } : {}),
             };
           }),
         ),
-      setTiled: (ref, tiled) =>
+      setGrid: (ref, grid) =>
         set((state) =>
           userAction(state, scopedThreadKey(ref), (current) => {
-            if ((current.tiled === true) === tiled) return current;
-            const { tiled: _tiled, sideBySideIds: _sideBySideIds, ...rest } = current;
-            return tiled ? { ...rest, tiled: true } : rest;
+            if (current.grid?.columns === grid?.columns && current.grid?.rows === grid?.rows)
+              return current;
+            const { grid: _grid, sideBySideIds: _sideBySideIds, ...rest } = current;
+            return grid ? { ...current, grid } : rest;
+          }),
+        ),
+      swapSurfaces: (ref, surfaceId, targetId) =>
+        set((state) =>
+          userAction(state, scopedThreadKey(ref), (current) => {
+            const from = current.surfaces.findIndex((surface) => surface.id === surfaceId);
+            const to = current.surfaces.findIndex((surface) => surface.id === targetId);
+            if (from < 0 || to < 0 || from === to) return current;
+            const surfaces = [...current.surfaces];
+            [surfaces[from], surfaces[to]] = [surfaces[to]!, surfaces[from]!];
+            return { ...current, surfaces };
           }),
         ),
       openBrowser: (ref, tabId) =>
@@ -1332,13 +1355,39 @@ export type TileSurface =
 export const isTileSurface = (surface: RightPanelSurface | null): surface is TileSurface =>
   surface?.kind === "device" || (surface?.kind === "preview" && surface.resourceId !== null);
 
-/** Device and browser tabs to show together in tab order, or null when the active tab shows alone. */
+export const SIDE_BY_SIDE_MAX = 4;
+
+const isSideBySideLayout = (value: unknown): value is SideBySideLayout =>
+  typeof value === "object" &&
+  value !== null &&
+  [(value as SideBySideLayout).columns, (value as SideBySideLayout).rows].every(
+    (size) => Number.isInteger(size) && size >= 1 && size <= SIDE_BY_SIDE_MAX,
+  );
+
+/** The grid, grown by rows when an agent adds a tile past its end; two columns to start. */
+function gridFitting(grid: SideBySideLayout | undefined, tileCount: number): SideBySideLayout {
+  const columns = grid?.columns ?? 2;
+  const rows = Math.max(grid?.rows ?? 1, Math.ceil(tileCount / columns));
+  return { columns, rows: Math.min(rows, SIDE_BY_SIDE_MAX) };
+}
+
+export interface TiledSurfaces {
+  readonly grid: SideBySideLayout;
+  /** In tab order, at most one per cell. */
+  readonly tiles: TileSurface[];
+  /** Tile tabs past the grid's last cell. */
+  readonly hiddenCount: number;
+}
+
+/** The grid to show, or null when the active tab shows alone: no grid, or the tab is outside it. */
 export function selectTiledSurfaces(
   surfaces: ReadonlyArray<RightPanelSurface>,
   activeSurface: RightPanelSurface | null,
-  tiled: boolean,
-): TileSurface[] | null {
-  if (!tiled || !isTileSurface(activeSurface)) return null;
-  const tiles = surfaces.filter(isTileSurface);
-  return tiles.length > 1 ? tiles : null;
+  grid: SideBySideLayout | undefined,
+): TiledSurfaces | null {
+  if (grid === undefined || !isTileSurface(activeSurface)) return null;
+  const all = surfaces.filter(isTileSurface);
+  const tiles = all.slice(0, grid.columns * grid.rows);
+  if (!tiles.includes(activeSurface)) return null;
+  return { grid, tiles, hiddenCount: all.length - tiles.length };
 }

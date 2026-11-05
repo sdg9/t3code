@@ -90,10 +90,15 @@ it.layer(layer)("PreviewManager", (it) => {
         tabId: opened.tabId,
         force: true,
         sideBySide: true,
+        layout: { columns: 3, rows: 1 },
       });
       const first = (yield* manager.list({ threadId })).sessions[0];
       expect(first?.reveal).toBe(true);
-      expect(first?.revealRequest).toMatchObject({ force: true, sideBySide: true });
+      expect(first?.revealRequest).toMatchObject({
+        force: true,
+        sideBySide: true,
+        layout: { columns: 3, rows: 1 },
+      });
       yield* manager.reportStatus({
         threadId,
         tabId: opened.tabId,

@@ -238,6 +238,10 @@ export const DeviceHostStatus = Schema.Literals([
 ]);
 export type DeviceHostStatus = typeof DeviceHostStatus.Type;
 
+const SideBySideSize = Schema.Int.check(Schema.isBetween({ minimum: 1, maximum: 4 }));
+export const SideBySideLayout = Schema.Struct({ columns: SideBySideSize, rows: SideBySideSize });
+export type SideBySideLayout = typeof SideBySideLayout.Type;
+
 export const DeviceSession = Schema.Struct({
   threadId: ThreadId,
   hostId: DeviceHostId,
@@ -246,6 +250,7 @@ export const DeviceSession = Schema.Struct({
   openedAt: Schema.String,
   /** The opener asked to show this device as the next side-by-side tile. */
   sideBySide: Schema.optional(Schema.Boolean),
+  layout: Schema.optional(SideBySideLayout),
 });
 export type DeviceSession = typeof DeviceSession.Type;
 
@@ -347,6 +352,7 @@ export const DeviceOpenInput = Schema.Struct({
   /** Boot the simulator or emulator when it is not running. Defaults to true. */
   boot: Schema.optional(Schema.Boolean),
   sideBySide: Schema.optional(Schema.Boolean),
+  layout: Schema.optional(SideBySideLayout),
 });
 export type DeviceOpenInput = typeof DeviceOpenInput.Type;
 
@@ -637,6 +643,9 @@ export const DeviceToolListResult = Schema.Struct({
 });
 export type DeviceToolListResult = typeof DeviceToolListResult.Type;
 
+export const SIDE_BY_SIDE_LAYOUT_GUIDANCE =
+  "Grid size for side by side, up to 4 by 4. Implies sideBySide. Default 2 columns, rows as needed.";
+
 export const SIDE_BY_SIDE_GUIDANCE =
   "Show it in the user's side-by-side grid, two tabs per row across devices and browser tabs. Tabs fill in call order, so make these calls one at a time, in pair order: left 1, right 1, left 2, right 2.";
 
@@ -655,6 +664,7 @@ export const DeviceToolOpenInput = Schema.Struct({
     DeviceHostId.annotate({ description: "Host from `device_list`. Default local." }),
   ),
   sideBySide: Schema.optional(Schema.Boolean.annotate({ description: SIDE_BY_SIDE_GUIDANCE })),
+  layout: Schema.optional(SideBySideLayout.annotate({ description: SIDE_BY_SIDE_LAYOUT_GUIDANCE })),
 });
 export type DeviceToolOpenInput = typeof DeviceToolOpenInput.Type;
 

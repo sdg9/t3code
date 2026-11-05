@@ -9,7 +9,7 @@ import {
   PreviewViewportSetting,
   PreviewViewportSize,
 } from "./preview.ts";
-import { SIDE_BY_SIDE_GUIDANCE } from "./device.ts";
+import { SIDE_BY_SIDE_GUIDANCE, SIDE_BY_SIDE_LAYOUT_GUIDANCE, SideBySideLayout } from "./device.ts";
 import { ProviderInstanceId } from "./providerInstance.ts";
 import { BrowserProfileId } from "./browserProfile.ts";
 
@@ -161,6 +161,7 @@ export const PreviewAutomationOpenInput = Schema.Struct({
     description: PROFILE_GUIDANCE,
   }),
   sideBySide: Schema.optional(Schema.Boolean.annotate({ description: SIDE_BY_SIDE_GUIDANCE })),
+  layout: Schema.optional(SideBySideLayout.annotate({ description: SIDE_BY_SIDE_LAYOUT_GUIDANCE })),
 }).check(
   Schema.makeFilter(
     (input) =>

@@ -355,6 +355,7 @@ import { observeResize } from "~/lib/observeResize";
 import { ThreadVisitWatermark } from "./chat/ThreadVisitWatermark";
 import { ChatTerminalDrawers } from "./chat/ChatTerminalDrawers";
 import { ChatRightPanel } from "./chat/ChatRightPanel";
+import { TileLayoutPicker } from "./TileLayoutPicker";
 import { useDraftEnvironmentRouting } from "./chat/useDraftEnvironmentRouting";
 import { branchMismatchBannerItem } from "./chat/ThreadActivityBanners";
 import { ThreadNow } from "./chat/ThreadNow";
@@ -1062,7 +1063,7 @@ export default function ChatView(props: ChatViewProps) {
   const rightPanelPresenceValue = {
     activeSurface: activeRightPanelSurface,
     surfaces: rightPanelState.surfaces,
-    tiled: rightPanelState.tiled === true,
+    grid: rightPanelState.grid,
   };
   const rightPanelPresence = usePanelPresence(
     rightPanelOpen && activeThreadRef !== null,
@@ -1080,11 +1081,11 @@ export default function ChatView(props: ChatViewProps) {
   const rightPanelTiles = selectTiledSurfaces(
     renderedRightPanelSurfaces,
     renderedRightPanelSurface,
-    rightPanelPresence.value?.tiled ?? false,
+    rightPanelPresence.value?.grid,
   );
   const previewMiniPlayerVisible = shouldRenderPreviewMiniPlayer(
     activePreviewMiniPlayer?.source ?? null,
-    rightPanelTiles ?? (renderedRightPanelSurface ? [renderedRightPanelSurface] : []),
+    rightPanelTiles?.tiles ?? (renderedRightPanelSurface ? [renderedRightPanelSurface] : []),
   );
   const canMaximizeRightPanel = rightPanelOpen;
   // An embedded side chat has no panel; a stale maximized flag would hide its own column.
@@ -3275,6 +3276,7 @@ export default function ChatView(props: ChatViewProps) {
       maximized={rightPanelMaximized}
       onToggleMaximized={toggleRightPanelMaximizedStable}
     >
+      {rightPanelOpen && activeThreadRef ? <TileLayoutPicker threadRef={activeThreadRef} /> : null}
       {panelToggleControls}
     </WorkspaceTitlebarControls>
   );
@@ -3959,6 +3961,7 @@ export default function ChatView(props: ChatViewProps) {
           layoutControls={
             rightPanelOpen ? (
               <div className="mr-px flex items-center gap-1">
+                <TileLayoutPicker threadRef={activeThreadRef} />
                 <RightPanelMaximizeControl
                   maximized={rightPanelMaximized}
                   onToggle={toggleRightPanelMaximizedStable}

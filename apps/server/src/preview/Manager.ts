@@ -12,6 +12,7 @@ import {
   FILL_PREVIEW_VIEWPORT,
   PreviewSessionLookupError,
   type PreviewSessionSnapshot,
+  type SideBySideLayout,
 } from "@t3tools/contracts";
 import {
   isPreviewUrlNormalizationError,
@@ -51,6 +52,7 @@ export class PreviewManager extends Context.Service<
         readonly tabId: string;
         readonly force: boolean;
         readonly sideBySide?: boolean;
+        readonly layout?: SideBySideLayout;
       },
     ) => Effect.Effect<void, PreviewError>;
     readonly resize: (
@@ -434,6 +436,7 @@ export const make = Effect.gen(function* PreviewManagerMake() {
             id: yield* random.uuidV4(),
             force: input.force,
             ...(input.sideBySide ? { sideBySide: true } : {}),
+            ...(input.layout ? { layout: input.layout } : {}),
           },
           updatedAt: yield* currentIsoTimestamp,
         };

@@ -188,30 +188,39 @@ describe("rightPanelStore", () => {
     ).toEqual([expect.objectContaining({ target: ios })]);
   });
 
-  it("tiles device and opened browser tabs in tab order while one is active, across reload", async () => {
+  it("fills the grid with device and opened browser tabs in tab order, across reload", async () => {
     const store = useRightPanelStore.getState();
     const tiled = () => {
       const state = selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA);
-      return selectTiledSurfaces(
+      const result = selectTiledSurfaces(
         state.surfaces,
         state.surfaces.find((surface) => surface.id === state.activeSurfaceId) ?? null,
-        state.tiled === true,
-      )?.map((surface) => surface.id);
+        state.grid,
+      );
+      return (
+        result && { ids: result.tiles.map((surface) => surface.id), hidden: result.hiddenCount }
+      );
     };
     store.openDevice(refA, { hostId: "local", deviceId: "a", name: "iPhone", platform: "ios" });
-    store.setTiled(refA, true);
-    expect(tiled()).toBeUndefined();
+    store.setGrid(refA, { columns: 2, rows: 1 });
+    expect(tiled()).toEqual({ ids: ["device:local:a"], hidden: 0 });
     store.openBrowser(refA, null);
-    expect(tiled()).toBeUndefined();
+    expect(tiled()).toBeNull();
     store.openBrowser(refA, "tab-1");
+    store.openBrowser(refA, "tab-2");
     store.open(refA, "files");
-    expect(tiled()).toBeUndefined();
+    expect(tiled()).toBeNull();
     store.activateSurface(refA, "browser:tab-1");
-    expect(tiled()).toEqual(["device:local:a", "browser:tab-1"]);
+    expect(tiled()).toEqual({ ids: ["device:local:a", "browser:tab-1"], hidden: 1 });
+    // A tab past the grid's last cell shows alone.
+    store.activateSurface(refA, "browser:tab-2");
+    expect(tiled()).toBeNull();
+    store.swapSurfaces(refA, "browser:tab-2", "device:local:a");
+    expect(tiled()).toEqual({ ids: ["browser:tab-2", "browser:tab-1"], hidden: 1 });
     await reloadRightPanelStore();
-    expect(tiled()).toEqual(["device:local:a", "browser:tab-1"]);
-    useRightPanelStore.getState().setTiled(refA, false);
-    expect(tiled()).toBeUndefined();
+    expect(tiled()).toEqual({ ids: ["browser:tab-2", "browser:tab-1"], hidden: 1 });
+    useRightPanelStore.getState().setGrid(refA, null);
+    expect(tiled()).toBeNull();
   });
 
   it("does not collide when two hosts expose the same device id", () => {

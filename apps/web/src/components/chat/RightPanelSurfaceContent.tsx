@@ -9,19 +9,22 @@ import type {
   ThreadPullRequestLink,
 } from "@t3tools/contracts";
 import { scopedThreadKey } from "@t3tools/client-runtime/environment";
+import { GripVertical } from "lucide-react";
 import { lazy, Suspense } from "react";
 import SideChatPane from "./SideChatPane";
 import { cn } from "../../lib/utils";
 import type { ComposerImageAttachment, DraftId } from "../../composerDraftStore";
 import type { ShortcutMatchContext } from "../../keybindings";
 import type { SideChatParentPanel } from "../../lib/sideChatPane";
-import { setActivePreviewTab } from "../../previewStateStore";
+import { setActivePreviewTab, useThreadPreviewState } from "../../previewStateStore";
 import {
   isTileSurface,
   type RightPanelSurface,
+  type TiledSurfaces,
   type TileSurface,
   useRightPanelStore,
 } from "../../rightPanelStore";
+import { surfaceTitle } from "../RightPanelTabs";
 import {
   PersistentThreadTerminalPanel,
   type PersistentThreadTerminalPanelProps,
@@ -65,10 +68,40 @@ interface RightPanelFileProps {
   readonly onPendingChange: (relativePath: string, pending: boolean) => void;
 }
 
+const TILE_DRAG_TYPE = "application/x-t3-tile";
+const NO_TERMINAL_LABELS: ReadonlyMap<string, string> = new Map();
+
+/** Names a tile, marks the selected one, and is its drag handle: drop it on another tile to swap. */
+function TileTitleBar(props: {
+  readonly threadRef: ScopedThreadRef;
+  readonly surface: TileSurface;
+  readonly active: boolean;
+}) {
+  const { sessions } = useThreadPreviewState(props.threadRef);
+  return (
+    <div
+      draggable
+      onDragStart={(event) => {
+        event.dataTransfer.setData(TILE_DRAG_TYPE, props.surface.id);
+        event.dataTransfer.effectAllowed = "move";
+      }}
+      className={cn(
+        "flex h-6 shrink-0 cursor-grab items-center gap-1 border-b px-1.5 text-xs active:cursor-grabbing",
+        props.active ? "text-foreground" : "text-muted-foreground",
+      )}
+    >
+      <GripVertical className="size-3 shrink-0 opacity-60" />
+      <span className="min-w-0 truncate">
+        {surfaceTitle(props.surface, sessions, NO_TERMINAL_LABELS)}
+      </span>
+    </div>
+  );
+}
+
 export function RightPanelSurfaceContent(props: {
   readonly surface: RightPanelSurface | null;
   /** Device and browser tabs shown together, or null when the active tab shows alone. */
-  readonly tiles: ReadonlyArray<TileSurface> | null;
+  readonly tiles: TiledSurfaces | null;
   readonly activeSurfaceId: string | null;
   readonly threadRef: ScopedThreadRef;
   readonly environmentId: EnvironmentId;
@@ -91,53 +124,97 @@ export function RightPanelSurfaceContent(props: {
   const { surface, threadRef, visible, onCloseSurface } = props;
   if (surface === null) return null;
   if (isTileSurface(surface)) {
-    const tiles = props.tiles ?? [surface];
+    const tiled = props.tiles;
+    const tiles = tiled?.tiles ?? [surface];
+    const columns = tiled?.grid.columns ?? 1;
+    const rows = tiled?.grid.rows ?? 1;
     // One grid for one tile or many, so tiling never remounts the active tab's view.
-    // Tabs pair up left and right, one pair per row, for comparing two builds.
     return (
       <Suspense fallback={null}>
-        <div
-          className={cn(
-            "grid size-full min-h-0 auto-rows-[minmax(0,1fr)] gap-px bg-border",
-            tiles.length > 1 ? "grid-cols-2" : "grid-cols-1",
-          )}
-        >
-          {tiles.map((tile, index) => (
-            <div
-              key={tile.id}
-              className="flex min-h-0 min-w-0"
-              onPointerDownCapture={() => {
-                if (tile.kind === "preview") setActivePreviewTab(threadRef, tile.resourceId);
-                if (tile.id !== props.activeSurfaceId)
-                  useRightPanelStore.getState().activateSurface(threadRef, tile.id);
-              }}
-            >
-              {tile.kind === "device" ? (
-                <DevicePanel
-                  mode="embedded"
-                  threadRef={threadRef}
-                  surface={tile}
-                  visible={visible}
-                  onDismissSetup={() => {
-                    onCloseSurface(tile);
-                    useRightPanelStore.getState().show(threadRef);
-                  }}
-                />
-              ) : (
-                <PreviewPanel
-                  mode="embedded"
-                  threadRef={threadRef}
-                  tabId={tile.resourceId}
-                  configuredUrls={props.configuredPreviewUrls}
-                  visible={visible}
-                  shortcutsEnabled={tile.id === surface.id}
-                  // Reordering moves a slot without resizing it; the desktop view must follow.
-                  layoutVersion={index}
-                  onSendAnnotation={props.onSendAnnotation}
-                />
-              )}
-            </div>
-          ))}
+        <div className="flex size-full min-h-0 flex-col">
+          <div
+            className="grid min-h-0 flex-1 gap-px bg-border"
+            style={{
+              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+              gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+            }}
+          >
+            {tiles.map((tile, index) => (
+              <div
+                key={tile.id}
+                className="flex min-h-0 min-w-0 flex-col bg-background"
+                onPointerDownCapture={() => {
+                  if (tile.kind === "preview") setActivePreviewTab(threadRef, tile.resourceId);
+                  if (tile.id !== props.activeSurfaceId)
+                    useRightPanelStore.getState().activateSurface(threadRef, tile.id);
+                }}
+                onDragOver={(event) => {
+                  if (event.dataTransfer.types.includes(TILE_DRAG_TYPE)) event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  const dragged = event.dataTransfer.getData(TILE_DRAG_TYPE);
+                  if (dragged)
+                    useRightPanelStore.getState().swapSurfaces(threadRef, dragged, tile.id);
+                }}
+              >
+                {tiled ? (
+                  <TileTitleBar
+                    threadRef={threadRef}
+                    surface={tile}
+                    active={tile.id === surface.id}
+                  />
+                ) : null}
+                <div className="flex min-h-0 flex-1">
+                  {tile.kind === "device" ? (
+                    <DevicePanel
+                      mode="embedded"
+                      threadRef={threadRef}
+                      surface={tile}
+                      visible={visible}
+                      onDismissSetup={() => {
+                        onCloseSurface(tile);
+                        useRightPanelStore.getState().show(threadRef);
+                      }}
+                    />
+                  ) : (
+                    <PreviewPanel
+                      mode="embedded"
+                      threadRef={threadRef}
+                      tabId={tile.resourceId}
+                      configuredUrls={props.configuredPreviewUrls}
+                      visible={visible}
+                      shortcutsEnabled={tile.id === surface.id}
+                      // Reordering moves a slot without resizing it; the desktop view must follow.
+                      layoutVersion={index}
+                      onSendAnnotation={props.onSendAnnotation}
+                    />
+                  )}
+                </div>
+              </div>
+            ))}
+            {Array.from({ length: columns * rows - tiles.length }, (_, index) => (
+              <div
+                key={`empty-${index}`}
+                className="bg-background"
+                onDragOver={(event) => {
+                  if (event.dataTransfer.types.includes(TILE_DRAG_TYPE)) event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  const dragged = event.dataTransfer.getData(TILE_DRAG_TYPE);
+                  const last = tiles.at(-1);
+                  if (dragged && last)
+                    useRightPanelStore.getState().swapSurfaces(threadRef, dragged, last.id);
+                }}
+              />
+            ))}
+          </div>
+          {tiled && tiled.hiddenCount > 0 ? (
+            <p className="border-t px-3 py-1 text-xs text-muted-foreground">
+              {tiled.hiddenCount === 1
+                ? "1 more tab isn't in this layout."
+                : `${tiled.hiddenCount} more tabs aren't in this layout.`}
+            </p>
+          ) : null}
         </div>
       </Suspense>
     );

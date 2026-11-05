@@ -242,7 +242,8 @@ const handlers = {
           hostId: target.hostId,
           deviceId: target.id,
           platform: target.platform,
-          ...(input.sideBySide ? { sideBySide: true } : {}),
+          ...(input.sideBySide || input.layout ? { sideBySide: true } : {}),
+          ...(input.layout ? { layout: input.layout } : {}),
         },
         { workspaceRoot: yield* threadWorkspaceRoot(scope.thread.threadId) },
       );

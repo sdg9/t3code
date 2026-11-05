@@ -17,7 +17,6 @@ import {
   MenuTrigger,
 } from "~/components/ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
-import type { TileLayout } from "../useTileLayout";
 
 const COLOR_SCHEME_OPTIONS: ReadonlyArray<{
   value: DesktopPreviewColorScheme;
@@ -50,7 +49,6 @@ interface Props {
   nativePictureInPicture: boolean;
   profileName: string | undefined;
   move?: { readonly label: string; readonly onMove: () => void };
-  tileLayout: TileLayout | null;
 }
 
 const MenuTriggerButton = () => (
@@ -78,7 +76,6 @@ export function PreviewMoreMenu({
   nativePictureInPicture,
   profileName,
   move,
-  tileLayout,
 }: Props) {
   const zoomLabel = `${Math.round(zoomFactor * 100)}%`;
   const disabled = !enabled;
@@ -102,11 +99,6 @@ export function PreviewMoreMenu({
           </MenuItem>
         ) : null}
         {move ? <MenuItem onClick={move.onMove}>{move.label}</MenuItem> : null}
-        {tileLayout ? (
-          <MenuItem onClick={tileLayout.toggle}>
-            {tileLayout.tiled ? "Show one at a time" : "Show side by side"}
-          </MenuItem>
-        ) : null}
         <MenuItem onClick={onToggleDeviceToolbar} disabled={disabled}>
           {deviceToolbarVisible ? "Hide device toolbar" : "Show device toolbar"}
         </MenuItem>

@@ -240,7 +240,7 @@ describe("revealServerTabs", () => {
     expect(useRightPanelStore.getState().getUserActionRevision(ref)).toBe(userActionRevision);
   });
 
-  it("tiles side-by-side opens in call order, ahead of other tabs, in any layout", () => {
+  it("tiles side-by-side opens in call order, ahead of other tabs, sized by layout", () => {
     setup();
     const sideBySide = (tabId: string): PreviewSessionSnapshot => ({
       ...tab(tabId),
@@ -266,7 +266,7 @@ describe("revealServerTabs", () => {
       "browser:tab_old",
     ]);
     expect(useRightPanelStore.getState().byThreadKey[threadKey]).toMatchObject({
-      tiled: true,
+      grid: { columns: 2, rows: 2 },
       activeSurfaceId: "device:local:pixel",
     });
 
@@ -276,7 +276,12 @@ describe("revealServerTabs", () => {
     store.moveSurface(ref, "browser:tab_a1", 2);
     store.closeSurface(ref, "device:local:pixel");
     store.openDevice(ref, { hostId: "local", deviceId: "pixel", platform: "android", name: "P" });
-    revealServerTabs(ref, [sideBySide("tab_c")], floating);
+    const sized = sideBySide("tab_c");
+    revealServerTabs(
+      ref,
+      [{ ...sized, revealRequest: { ...sized.revealRequest!, layout: { columns: 3, rows: 1 } } }],
+      floating,
+    );
     expect(surfaceIds()).toEqual([
       "browser:tab_b1",
       "browser:tab_a1",
@@ -284,6 +289,10 @@ describe("revealServerTabs", () => {
       "browser:tab_old",
       "device:local:pixel",
     ]);
+    expect(useRightPanelStore.getState().byThreadKey[threadKey]?.grid).toEqual({
+      columns: 3,
+      rows: 1,
+    });
     expect(floatingTabId()).toBeNull();
     expect(miniPlayerSource()).toBeUndefined();
   });
