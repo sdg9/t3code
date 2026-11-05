@@ -55,7 +55,7 @@ export function TileLayoutRadioGroup(props: { readonly layout: TileLayout }) {
 
 function TileLayoutOption(props: { readonly value: string; readonly label: string }) {
   return (
-    <MenuRadioItem value={props.value}>
+    <MenuRadioItem value={props.value} closeOnClick>
       <span className="flex items-center gap-2">
         <span className="flex-1">{props.label}</span>
         <MenuRadioItemIndicator />
