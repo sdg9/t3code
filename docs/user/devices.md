@@ -18,6 +18,9 @@ device to boot it. The panel shows when you or an agent starts a device.
 Each device opens in its own tab. Use **+ → Device** to open another, and
 double-click a tab name or choose **Rename** from its context menu to rename it.
 Only the visible tab streams video; switching tabs keeps both devices running.
+With two or more device tabs open, choose **Show devices side by side** in the
+device toolbar to watch them all at once; every tiled device streams, and the
+same button switches back to one device at a time.
 Choose **Float device over chat** in the toolbar to keep watching and tapping the
 device in a small window while the right panel shows something else; drag the
 window by its handle, resize it from any edge, and use **Open in right panel**

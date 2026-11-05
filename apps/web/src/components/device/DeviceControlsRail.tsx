@@ -2,6 +2,7 @@ import type { DeviceHostSummary, DevicePlatform } from "@t3tools/contracts";
 import {
   Camera,
   ChevronLeft,
+  Columns2,
   Home,
   Keyboard,
   Box,
@@ -34,6 +35,11 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "~/components/ui/tooltip";
 import type { DeviceStreamHandle, DeviceViewControls } from "./DeviceStreamView";
 import type { DeviceControls } from "./useDeviceControls";
 
+export interface DeviceTiling {
+  readonly tiled: boolean;
+  readonly onToggle: () => void;
+}
+
 export function DeviceControlsRail(props: {
   platform: DevicePlatform;
   hostKind: DeviceHostSummary["kind"] | undefined;
@@ -44,6 +50,7 @@ export function DeviceControlsRail(props: {
   onScreenshot: () => void;
   toolsOpen: boolean;
   onTools: () => void;
+  tiling: DeviceTiling | null;
   onFloat: () => void;
   onClose: () => void;
   onPowerOff: () => void;
@@ -261,6 +268,16 @@ export function DeviceControlsRail(props: {
             onClick={view.keyboard.toggle}
           >
             <Keyboard />
+          </RailButton>
+        ) : null}
+        {props.tiling ? (
+          <RailButton
+            tooltipSide={popupSide}
+            label="Show devices side by side"
+            pressed={props.tiling.tiled}
+            onClick={props.tiling.onToggle}
+          >
+            <Columns2 />
           </RailButton>
         ) : null}
         {view.phone ? (

@@ -94,6 +94,8 @@ export interface ThreadRightPanelState {
   surfaces: RightPanelSurface[];
   dismissedDeviceSurfaceIds?: string[];
   maximized?: true;
+  /** While a device tab is active, every device tab shows side by side. */
+  devicesTiled?: true;
   proactiveDiffTurnId?: RunId;
 }
 
@@ -128,6 +130,7 @@ interface RightPanelStoreState {
   openSideChat: (ref: ScopedThreadRef, threadId: ThreadId) => void;
   openDevice: (ref: ScopedThreadRef, target: DeviceTabTarget, automatic?: boolean) => void;
   renameDevice: (ref: ScopedThreadRef, surfaceId: string, title: string) => void;
+  setDevicesTiled: (ref: ScopedThreadRef, tiled: boolean) => void;
   openBrowser: (ref: ScopedThreadRef, tabId: string | null) => void;
   openFile: (ref: ScopedThreadRef, relativePath: string, line?: number) => void;
   /** Moves in place; "" opens the root explorer. folderTrail keeps the return path; keepSource opens beside the source. */
@@ -598,6 +601,9 @@ export function migratePersistedRightPanelState(persistedState: unknown): {
                       }
                     : {}),
                   ...(validThreadState?.maximized === true ? { maximized: true as const } : {}),
+                  ...(validThreadState?.devicesTiled === true
+                    ? { devicesTiled: true as const }
+                    : {}),
                 },
               ];
             }),
@@ -736,6 +742,14 @@ export const useRightPanelStore = create<RightPanelStoreState>()(
                 : surface,
             ),
           })),
+        ),
+      setDevicesTiled: (ref, tiled) =>
+        set((state) =>
+          userAction(state, scopedThreadKey(ref), (current) => {
+            if ((current.devicesTiled ?? false) === tiled) return current;
+            const { devicesTiled: _devicesTiled, ...rest } = current;
+            return tiled ? { ...rest, devicesTiled: true } : rest;
+          }),
         ),
       openBrowser: (ref, tabId) =>
         set((state) =>
@@ -1255,4 +1269,17 @@ export function selectSelectedRightPanelSurface(
 ): RightPanelSurface | null {
   const state = selectThreadRightPanelState(byThreadKey, ref);
   return state.surfaces.find((surface) => surface.id === state.activeSurfaceId) ?? null;
+}
+
+export type DeviceSurface = Extract<RightPanelSurface, { kind: "device" }>;
+
+/** The device tabs to show side by side, or null when the active tab shows alone. */
+export function selectTiledDeviceSurfaces(
+  surfaces: ReadonlyArray<RightPanelSurface>,
+  activeSurface: RightPanelSurface | null,
+  devicesTiled: boolean,
+): DeviceSurface[] | null {
+  if (!devicesTiled || activeSurface?.kind !== "device") return null;
+  const devices = surfaces.filter((surface) => surface.kind === "device");
+  return devices.length > 1 ? devices : null;
 }

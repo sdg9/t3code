@@ -13,6 +13,7 @@ import {
   selectActiveRightPanelSurface,
   selectThreadPanelVisibility,
   selectThreadRightPanelState,
+  selectTiledDeviceSurfaces,
   useRightPanelStore,
 } from "./rightPanelStore";
 
@@ -185,6 +186,31 @@ describe("rightPanelStore", () => {
     expect(
       selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA).surfaces,
     ).toEqual([expect.objectContaining({ target: ios })]);
+  });
+
+  it("tiles every device tab while one is active, and remembers the choice across reload", async () => {
+    const store = useRightPanelStore.getState();
+    const tiled = () => {
+      const state = selectThreadRightPanelState(useRightPanelStore.getState().byThreadKey, refA);
+      return selectTiledDeviceSurfaces(
+        state.surfaces,
+        state.surfaces.find((surface) => surface.id === state.activeSurfaceId) ?? null,
+        state.devicesTiled === true,
+      )?.map((surface) => surface.id);
+    };
+    const device = { hostId: "local", name: "iPhone", platform: "ios" } as const;
+    store.openDevice(refA, { ...device, deviceId: "a" });
+    store.setDevicesTiled(refA, true);
+    expect(tiled()).toBeUndefined();
+    store.openDevice(refA, { ...device, deviceId: "b" });
+    store.open(refA, "files");
+    expect(tiled()).toBeUndefined();
+    store.activateSurface(refA, "device:local:a");
+    expect(tiled()).toEqual(["device:local:a", "device:local:b"]);
+    await reloadRightPanelStore();
+    expect(tiled()).toEqual(["device:local:a", "device:local:b"]);
+    useRightPanelStore.getState().setDevicesTiled(refA, false);
+    expect(tiled()).toBeUndefined();
   });
 
   it("does not collide when two hosts expose the same device id", () => {

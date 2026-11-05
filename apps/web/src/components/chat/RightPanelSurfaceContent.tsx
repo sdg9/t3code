@@ -14,7 +14,11 @@ import SideChatPane from "./SideChatPane";
 import type { ComposerImageAttachment, DraftId } from "../../composerDraftStore";
 import type { ShortcutMatchContext } from "../../keybindings";
 import type { SideChatParentPanel } from "../../lib/sideChatPane";
-import { type RightPanelSurface, useRightPanelStore } from "../../rightPanelStore";
+import {
+  type RightPanelSurface,
+  selectTiledDeviceSurfaces,
+  useRightPanelStore,
+} from "../../rightPanelStore";
 import {
   PersistentThreadTerminalPanel,
   type PersistentThreadTerminalPanelProps,
@@ -60,6 +64,8 @@ interface RightPanelFileProps {
 
 export function RightPanelSurfaceContent(props: {
   readonly surface: RightPanelSurface | null;
+  readonly surfaces: ReadonlyArray<RightPanelSurface>;
+  readonly devicesTiled: boolean;
   readonly activeSurfaceId: string | null;
   readonly threadRef: ScopedThreadRef;
   readonly environmentId: EnvironmentId;
@@ -179,22 +185,31 @@ export function RightPanelSurfaceContent(props: {
           onClose={() => onCloseSurface(surface)}
         />
       );
-    case "device":
+    case "device": {
+      const tiles = selectTiledDeviceSurfaces(props.surfaces, surface, props.devicesTiled) ?? [
+        surface,
+      ];
+      // One grid for both layouts, so tiling never remounts the active device's stream.
       return (
         <Suspense fallback={null}>
-          <DevicePanel
-            mode="embedded"
-            threadRef={threadRef}
-            key={surface.id}
-            surface={surface}
-            visible={visible}
-            onDismissSetup={() => {
-              props.onCloseSurface(surface);
-              useRightPanelStore.getState().show(threadRef);
-            }}
-          />
+          <div className="grid size-full min-h-0 grid-flow-col auto-cols-[minmax(0,1fr)] divide-x divide-border">
+            {tiles.map((tile) => (
+              <DevicePanel
+                mode="embedded"
+                threadRef={threadRef}
+                key={tile.id}
+                surface={tile}
+                visible={visible}
+                onDismissSetup={() => {
+                  props.onCloseSurface(tile);
+                  useRightPanelStore.getState().show(threadRef);
+                }}
+              />
+            ))}
+          </div>
         </Suspense>
       );
+    }
     case "files":
     case "file": {
       const files = props.files;
